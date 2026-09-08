@@ -11,7 +11,8 @@
     "brainpane": "bin/brainpane.mjs"
   },
   "scripts": {
-    "build": "tsc --noEmit && tsc -p tsconfig.server.json",
+    "build": "node scripts/fix-pty-permissions.mjs && tsc --noEmit && tsc -p tsconfig.server.json",
+    "postinstall": "node scripts/fix-pty-permissions.mjs",
     "build:web-legacy": "vite build",
     "start": "node bin/brainpane.mjs run -- codex",
     "brainpane": "node bin/brainpane.mjs",

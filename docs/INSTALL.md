@@ -31,6 +31,8 @@ npm run setup -- --shell bash
 
 Stop if a command fails. No npm-registry release is assumed. Do not pipe an uninspected remote script into a shell, change execution policy, add a provider API key, disable CLI approvals, or replace the CLI executable. If node-pty has no suitable prebuild, follow its [official prerequisites](https://github.com/microsoft/node-pty#dependencies) for the actual platform.
 
+On macOS, install/build restores the executable bit on node-pty's known `spawn-helper` binary when needed. This addresses the [1.1.0 upstream packaging issue](https://github.com/microsoft/node-pty/issues/850); the repair is confined to the installed dependency, not system permissions or CLI binaries.
+
 Setup installs user skills for both CLIs and adds a marked profile block. It queries `$PROFILE.CurrentUserAllHosts` for installed Windows PowerShell/PowerShell 7, including redirected Documents folders. Use `--profile <exact-path>` for a particular profile; `--home <path>` supports isolated tests. bash defaults to `.bashrc`; select the correct profile explicitly if a login shell does not source it. Existing same-named aliases/functions remain active and produce a warning.
 
 Keep the checkout at its installed location. `npm link` is optional because the profile provides a `brainpane` function. No persistent OS daemon is installed; the internal service runs only with the CLI wrapper.
