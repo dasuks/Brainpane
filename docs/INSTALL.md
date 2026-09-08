@@ -15,7 +15,7 @@ git clone https://github.com/dasuks/Brainpane.git "$env:LOCALAPPDATA\Brainpane\s
 Set-Location "$env:LOCALAPPDATA\Brainpane\source"
 npm ci
 npm run build
-npm run setup -- --shell powershell
+node bin/brainpane.mjs setup --shell powershell
 ```
 
 bash/zsh example:
@@ -25,7 +25,7 @@ git clone https://github.com/dasuks/Brainpane.git "$HOME/.local/share/brainpane"
 cd "$HOME/.local/share/brainpane"
 npm ci
 npm run build
-npm run setup -- --shell bash
+node bin/brainpane.mjs setup --shell bash
 # Or --shell zsh
 ```
 
@@ -33,7 +33,7 @@ Stop if a command fails. No npm-registry release is assumed. Do not pipe an unin
 
 On macOS, install/build restores the executable bit on node-pty's known `spawn-helper` binary when needed. This addresses the [1.1.0 upstream packaging issue](https://github.com/microsoft/node-pty/issues/850); the repair is confined to the installed dependency, not system permissions or CLI binaries.
 
-Setup installs user skills for both CLIs and adds a marked profile block. It queries `$PROFILE.CurrentUserAllHosts` for installed Windows PowerShell/PowerShell 7, including redirected Documents folders. Use `--profile <exact-path>` for a particular profile; `--home <path>` supports isolated tests. bash defaults to `.bashrc`; select the correct profile explicitly if a login shell does not source it. Existing same-named aliases/functions remain active and produce a warning.
+Setup installs user skills for both CLIs and adds a marked profile block. It queries `$PROFILE.CurrentUserAllHosts` for installed Windows PowerShell/PowerShell 7, including redirected Documents folders. Use `--profile <exact-path>` for a particular profile; `--home <path>` supports isolated tests. Pass these options directly through `node bin/brainpane.mjs setup` so PowerShell/npm separator handling cannot swallow them. bash defaults to `.bashrc`; select the correct profile explicitly if a login shell does not source it. Existing same-named aliases/functions remain active and produce a warning.
 
 Keep the checkout at its installed location. `npm link` is optional because the profile provides a `brainpane` function. No persistent OS daemon is installed; the internal service runs only with the CLI wrapper.
 

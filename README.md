@@ -30,9 +30,9 @@ npm run setup
 기본 설치 셸은 Windows에서 PowerShell, 그 외에는 현재 bash/zsh입니다. 직접 선택할 수도 있습니다.
 
 ```text
-npm run setup -- --shell powershell
-npm run setup -- --shell bash
-npm run setup -- --shell zsh
+node bin/brainpane.mjs setup --shell powershell
+node bin/brainpane.mjs setup --shell bash
+node bin/brainpane.mjs setup --shell zsh
 ```
 
 GitHub 링크로 에이전트에게 설치를 맡기려면:
