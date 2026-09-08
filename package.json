@@ -1,6 +1,6 @@
 {
   "name": "brainpane",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -17,6 +17,8 @@
     "brainpane": "node bin/brainpane.mjs",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "node scripts/terminal-e2e.mjs",
+    "test:lifecycle": "node scripts/terminal-lifecycle-e2e.mjs",
+    "setup": "node bin/brainpane.mjs setup",
     "test:web-legacy": "playwright test",
     "test:codex": "node scripts/verify-real-cli.mjs codex",
     "test:claude": "node scripts/verify-real-cli.mjs claude"

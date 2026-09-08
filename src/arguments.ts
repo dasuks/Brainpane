@@ -5,12 +5,13 @@ const options = {
   cli: { type: 'string' }, conversation: { type: 'string' }, data: { type: 'string' },
   project: { type: 'string' }, port: { type: 'string' }, open: { type: 'boolean' }, interval: { type: 'string' },
   width: { type: 'string' }, prefix: { type: 'string' }, 'no-bootstrap': { type: 'boolean' }, demo: { type: 'boolean' },
+  dormant: { type: 'boolean' }, shell: { type: 'string' }, profile: { type: 'string' }, home: { type: 'string' },
 } as const;
 
 export function parseCliArgs(argv: string[]) {
   let end = argv.length;
   let childArgs: string[] = [];
-  if (argv[0] === 'run') {
+  if (argv[0] === 'run' || argv[0] === 'launch') {
     // PowerShell can consume -- before npm's .ps1 shim sees it. The first
     // positional executable also ends wrapper options; every later token is
     // owned by the child, including options whose names overlap with ours.

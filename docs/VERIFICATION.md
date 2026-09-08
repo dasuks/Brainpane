@@ -2,6 +2,18 @@
 
 Validated on 2026-09-09. Claims below concern the terminal implementation, not the archived browser UI.
 
+## 0.2 on-demand release checks
+
+- Windows PowerShell profile integration installed and verified at the actual redirected Documents profile path. New shells resolve `codex`, `claude`, and `brainpane` as functions. Original CLI version commands still work. Existing CLI settings/login were not modified.
+- Actual Codex 0.153.4 and Claude 2.1.263 were launched by the ordinary shell command in separate test workspaces, with no startup activation prompt. Two public conversation turns occurred while the map remained inactive at version 0, with no captured goal/history.
+- Explicit `$brainpane start` / `/brainpane start` opened the panel and reconstructed the prior reading-group discussion, including its original goal and topic branches. Both tests then stopped through the skill, continued chatting with no state updates, and reopened with the original topic IDs preserved. Both ended at version 5 with five topics. These are live model smoke tests, not predetermined patches or a general quality guarantee.
+- The first Codex automation attempt timed out after sending the second prompt. Increasing the test's paste/turn-settle intervals allowed the rerun to complete. We do not treat that as proof of universal input timing compatibility.
+- 22 unit/integration tests passed locally, covering installer ownership, repeat installation, UTF-16 profile preservation, Unicode paths, existing functions, passthrough/recursion, interrupted-setup recovery, and session-bound panel lifecycle in addition to the prior map/VT tests.
+- Terminal E2E and dormant → open → publish → hide → sync → stop → reopen E2E passed. A no-change synchronization can clear loading without a semantic patch. Default session directories contain a Git exclusion file.
+- GitHub Actions defines Windows/Linux/macOS build, unit and deterministic PTY checks. Until the corresponding run passes, the definition alone is not a compatibility result. Live logged-in model tests remain opt-in and are not run in CI.
+
+The earlier checks below document the immediate-open 0.1 path, which is still available through `brainpane run`.
+
 ## Environment
 
 - Windows x64, Node.js 24.14.1, npm 11.12.1.

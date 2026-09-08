@@ -1,172 +1,143 @@
 # Brainpane
 
-**대화의 현재 위치와 돌아갈 가지를, 기존 AI CLI와 같은 터미널 화면에서.**
+**평소처럼 AI와 대화하다가, 필요할 때 같은 터미널 옆에 대화 지도를 꺼내세요.**
 
-A conversation compass beside your actual Codex or Claude Code process. One terminal, one command. No browser, replacement chat client, or separate model API key.
+A conversation compass for your real Codex / Claude Code session. Open it when you need it; keep your existing CLI, login and conversation.
 
 ```text
-brainpane run -- codex
-brainpane run -- claude
+codex                      claude
+  …평소처럼 대화…            …평소처럼 대화…
+  $brainpane start           /brainpane start
+  → 오른쪽에 현재 대화 지도   → 오른쪽에 현재 대화 지도
 ```
 
-PowerShell의 npm 실행 스크립트가 `--`를 소비하는 경우도 지원합니다. `brainpane run claude`처럼 구분자를 생략해도 됩니다. Brainpane 옵션은 실행할 CLI 이름 앞에, 해당 CLI의 옵션은 이름 뒤에 둡니다.
-
-왼쪽은 기존 로그인·세션을 사용하는 **실제 AI CLI**, 오른쪽은 출발점·현재 경로·미결/보류한 가지가 남는 고정 패널입니다. 내부 프로세스는 Brainpane이 시작하고 종료합니다. 별도 서버·브라우저·두 번째 터미널·tmux·zellij·호스트 전용 API가 필요하지 않습니다.
-
-MVP / MIT. 갱신은 현재 에이전트의 스킬 지침에 따른 방식이며, **매 턴 실행을 강제하는 훅은 없습니다**. 누락 시 재동기화를 제공합니다.
+현재 에이전트가 읽을 수 있는 **앞선 대화의 출발점·주제 가지·현재 위치**를 지도에 반영합니다. 채팅은 왼쪽에서 계속하고, 지도는 오른쪽에 남습니다. MIT · 0.2 preview · 별도 API 키·브라우저·tmux·호스트 전용 API 불필요.
 
 ## 설치
 
-Node.js **22.12 이상**, npm, 사용할 Codex 또는 Claude Code가 필요합니다. 각 CLI의 로그인은 기존 방법 그대로 사용합니다.
+Node.js **22.12 이상**, npm, Git과 기존에 사용하는 Codex 또는 Claude Code가 필요합니다.
 
 ```text
 git clone https://github.com/dasuks/Brainpane.git
 cd Brainpane
 npm ci
 npm run build
-npm link
+npm run setup
 ```
 
-설치 후 평소 작업하던 프로젝트의 터미널에서 `brainpane run -- codex` 또는 `brainpane run -- claude`를 실행하세요. CLI의 기존 프로젝트 신뢰/권한 확인은 평소처럼 처리합니다. Brainpane은 이를 우회하지 않습니다. 준비 후 첫 실제 질문부터 지도가 만들어집니다.
+설치 후 **새 터미널을 열고**, 평소 작업 폴더에서 `codex` 또는 `claude`를 실행하세요. 처음에는 지도가 숨겨져 있고 지도 생성은 비활성입니다. 대화 중 `$brainpane start` / `/brainpane start`를 입력하면 패널이 열리고 현재 문맥을 정리합니다.
 
-전역 링크 없이 이 체크아웃에서 실행하려면 `npm run brainpane -- run -- codex`를 사용합니다. `npm start`도 Codex 터미널 모드를 실행합니다. 아직 레지스트리에 게시한 패키지가 아니므로 `npx brainpane`로 설치하지 마세요.
+기본 설치 셸은 Windows에서 PowerShell, 그 외에는 현재 bash/zsh입니다. 직접 선택할 수도 있습니다.
 
-Windows에서는 node-pty의 ConPTY를 사용합니다. 이 Windows x64 / Node 24 환경에서는 포함된 네이티브 바이너리로 설치됐습니다. 다른 OS/아키텍처에서 사전 빌드가 없으면 [node-pty 빌드 의존성](https://github.com/microsoft/node-pty#dependencies)이 필요할 수 있습니다. Bash 전용 실행 스크립트는 없습니다.
+```text
+npm run setup -- --shell powershell
+npm run setup -- --shell bash
+npm run setup -- --shell zsh
+```
 
-## 조작
+GitHub 링크로 에이전트에게 설치를 맡기려면:
 
-기본 입력은 왼쪽 CLI로 전달됩니다. 예약하는 키는 **`Ctrl+]` 접두키 하나**입니다. 누르고 놓은 뒤 다음 키를 누르세요. 접두키를 두 번 누르면 원래 키가 CLI에 전달됩니다.
+> https://github.com/dasuks/Brainpane 의 docs/INSTALL.md를 읽고 이 PC에 설치해줘. 기존 CLI와 설정을 보존하고 설치 확인까지 해줘.
 
-| 접두키 다음 | 동작 |
+[상세 설치·업데이트·제거 안내](docs/INSTALL.md). npm 레지스트리에 게시한 패키지는 아닙니다. `npx brainpane`으로 다른 패키지를 설치하지 마세요. 설치한 소스 폴더는 실행에 사용되므로 유지해야 합니다.
+
+## 사용
+
+Codex는 `$brainpane`, Claude는 `/brainpane`을 대화에 입력합니다.
+
+| 명령 뒤에 붙이는 말 | 동작 |
 | --- | --- |
-| `Tab` / `m` | 채팅 ↔ 지도 포커스 |
-| `p` | 패널 숨기기/표시 |
-| `+` / `-` | 패널 폭 조절 |
-| `u` / `d` | 왼쪽 스크롤백 위/아래 |
-| `e` | 왼쪽 최신 출력으로 복귀 |
-| `c` | 선택·복사 모드 |
-| `?` | 도움말 |
-| `q` | CLI와 내부 서비스 종료 |
+| `start` | 패널을 열고 앞선 공개 대화부터 현재까지 지도에 반영 |
+| `sync` | 사용 가능한 현재 문맥으로 명시적 재동기화 |
+| `hide` | 화면만 숨김; 지도 갱신은 계속 |
+| `stop` | 패널을 닫고 추가 지도 작업 중단 |
+| 다시 `start` | 기존 가지와 사용자 수정을 보존하며 재개 |
 
-좁은 터미널에서는 같은 화면에서 채팅과 지도를 전환합니다. 크기 변경은 자식 PTY에도 전달됩니다. 접두키와 초기 폭은 설정 가능합니다.
+처음 열 때는 ‘지금까지의 대화를 정리 중’으로 표시하고, 패치가 저장되면 지도가 나타납니다. **에이전트가 현재 볼 수 있는 문맥까지만 정리합니다.** 압축되거나 사라진 과거 발언을 완벽하게 복원하지 않습니다. 시작 명령을 원래 질문으로 기록하지 않도록 스킬에 규칙을 두었습니다. 권한 확인과 도구 호출은 원래 CLI에 보일 수 있습니다.
 
-`● claude · 채팅 입력`은 왼쪽에 입력 중이라는 뜻입니다. 지도에 포커스가 있을 때는 하단에 채팅 복귀 방법을 표시합니다. 왼쪽 클릭 또는 `Ctrl+]` 다음 `Tab`으로 돌아갑니다. 지도 위의 휠·마우스 이동은 키보드 포커스를 바꾸지 않습니다.
+### 화면 조작
 
-```text
-brainpane run --width 46 --prefix ctrl-g -- codex
-```
+기본 입력 포커스는 채팅입니다. 지도 탐색 뒤 **왼쪽 클릭** 또는 **`Ctrl+]`를 누르고 손을 뗀 다음 `Tab`**으로 채팅에 돌아갑니다. 지도 포커스에서는 하단에 복귀 안내를 표시합니다.
 
-Ctrl+C·Enter·Tab·Escape는 접두키로 예약할 수 없습니다. 채팅 포커스에서 기존 키/방향키/응답 중단은 자식으로 전달됩니다. 실제 단축키 지원 범위는 사용 중인 호스트와 CLI의 영향을 받습니다.
-
-지도 포커스의 키:
-
-| 키 | 동작 |
+| 조작 | 동작 |
 | --- | --- |
-| `↑↓` / `jk` | 주제 선택 |
-| `←→` / `hl` | 접기/펼치기 |
-| `Enter` | 주제 상세 ↔ 전체 지도 |
-| `PageUp/Down` | 지도/상세 스크롤 |
-| `n` | 실제 현재 주제로 돌아가기 |
-| `f` | 현재 위치 추적 토글 |
-| `e` | 제목 수정; Enter 저장, Esc 취소 |
-| `s` | 상태 변경: 검토 중 → 해결 → 보류 |
-| `r` | CLI 재동기화 명령 안내 |
-| `x` | 지도 발행 수락 중단/재개 |
-| `Esc` | 상세/편집 닫기, 이후 채팅 복귀 |
+| `Ctrl+]` 다음 `Tab` | 채팅 ↔ 지도 포커스 |
+| `Ctrl+]` 다음 `p` | 패널 표시/숨김; 지도 작업 중단은 `stop` |
+| `Ctrl+]` 다음 `+` / `-` | 지도 폭 조절 |
+| `Ctrl+]` 다음 `u` / `d` / `e` | 채팅 스크롤백 위/아래/최신 출력 |
+| `Ctrl+]` 다음 `c` | 선택·복사 모드; 드래그 후 `y` 복사 |
+| `Ctrl+]` 다음 `q` | CLI와 내부 서비스 종료 |
+| 지도에서 방향키·Enter | 선택·접기/펼치기·상세 보기 |
+| 지도에서 `n` / `f` | 현재 위치로 돌아가기 / 추적 토글 |
+| 지도에서 `e` / `s` | 주제 제목 / 진행 상태 수정 |
 
-마우스로 지도 노드를 선택할 수 있습니다. 왼쪽 휠은 CLI가 마우스를 사용하는 경우 그 CLI로 전달하고, 그 외에는 스크롤백을 이동합니다. 복사 모드에서 드래그로 텍스트를 선택하고 `y`로 복사합니다. Windows 기본 PowerShell 클립보드, macOS pbcopy, Linux의 설치된 xclip을 사용합니다. 도구가 없으면 오류를 표시합니다. 호스트의 Shift+선택/복사 키 동작은 호스트마다 다를 수 있습니다.
+접두키를 두 번 누르면 원래 키가 CLI로 전달됩니다. 좁은 화면은 같은 터미널에서 채팅/지도를 전환합니다. 지도를 클릭해도 실제 대화 위치는 바뀌지 않습니다. 전체 지도를 매번 재배치하거나 강제로 현재 노드로 이동하지 않습니다.
 
-## 스킬 활성화와 복구
+## 설치 범위와 제거
 
-인자 없는 `run -- claude`는 [공식 `--append-system-prompt` 옵션](https://code.claude.com/docs/en/cli-reference#system-prompt-flags)으로 지도 스킬 지침을 추가합니다. 긴 내부 지침을 사용자 메시지로 보내거나 준비 응답을 기다리지 않습니다. 첫 질문을 입력하면 기존 Claude가 답변하면서 지도 기록을 시작합니다. `run -- codex`는 짧은 한국어 시작 메시지로 스킬을 활성화하고 준비 응답을 기다립니다. Codex에는 이 안내와 스킬을 읽는 도구 호출이 보일 수 있지만 긴 내부 지침이나 절대 경로를 시작 메시지로 넣지 않습니다. 기존 Codex의 `developer_instructions` 설정은 덮어쓰지 않습니다. 별도 모델이나 API를 추가하지 않으며 시작 지침은 대화의 출발점으로 기록하지 않습니다.
+- 셸 프로필에 **표시된 관리 구간**을 추가해 `codex`, `claude`, `brainpane` 함수를 정의합니다. 기존 동명 별칭/함수가 있으면 보존하고 충돌 안내를 표시합니다.
+- 사용자 스킬을 `~/.agents/skills/brainpane`와 `~/.claude/skills/brainpane`에 설치합니다. 초기 자동 호출은 비활성화합니다.
+- 원래 CLI 실행 파일·로그인·Codex/Claude 설정은 교체하지 않습니다. 비대화형 실행, 도움말·버전·관리 명령은 원래 CLI에 전달하고 래퍼 중첩을 방지합니다.
 
-CLI에 다른 인자를 전달하면 인자 의미를 보존하기 위해 자동 활성화 지침을 추가하지 않습니다. 프로젝트 스킬을 한 번 설치하고 해당 CLI 대화에서 활성화하세요.
-
-```text
-brainpane install codex
-brainpane run --session my-map -- codex resume <actual-cli-session-id>
-```
-
-Codex 대화 입력란:
+**프로필을 읽는 셸**에 적용됩니다. `-NoProfile`, CLI 절대 경로 직접 실행, 이미 켜져 있던 일반 CLI에는 적용되지 않습니다. CMD·fish·모든 앱 호스트의 자동 연동은 제공하지 않습니다.
 
 ```text
-$brainpane start
-$brainpane sync
-$brainpane stop
+brainpane doctor
+brainpane uninstall
 ```
 
-Claude는 `brainpane install claude` 후 `/brainpane start`, `/brainpane sync`, `/brainpane stop`을 사용합니다. `--no-bootstrap`은 자동 활성화 지침 전달을 끕니다.
+제거 후 새 터미널을 열면 원래 CLI 명령으로 돌아갑니다. 설치 후 사용자가 수정한 스킬/관리 구간은 삭제하지 않고 보고합니다. 지도 데이터도 보존합니다.
 
-지도 ID와 저장 위치는 래퍼가 자식 환경에 명시적으로 전달합니다. 최신 로그를 추측하지 않습니다. 지도 ID와 네이티브 CLI 세션 ID는 다릅니다. `--session`으로 기존 지도를 열 때는 원래 CLI 대화도 직접 지정하세요. 임의 네이티브 실행 파일을 왼쪽에 실행할 수는 있지만 **지도 어댑터는 Codex/Claude만 지원**합니다.
-
-설치 파일은 `.agents/skills/brainpane/` 또는 `.claude/skills/brainpane/`의 `SKILL.md`, `protocol.md`, `bridge.mjs`입니다. 기존 디렉터리가 있으면 거절합니다. 다른 설정/AGENTS.md/CLAUDE.md/훅을 바꾸지 않습니다. 다른 프로젝트는 `--project <path>`를 지정합니다. 제거는 위 세 파일과 빈 디렉터리를 삭제하고, 전역 링크는 `npm unlink -g brainpane`으로 제거합니다.
-
-### 정확한 갱신 범위
-
-- 의미 있는 주제 변화만 작은 패치로 발행합니다. 기존 주제는 ID를 재사용합니다. 모든 메시지나 명사가 노드가 되는 방식이 아닙니다.
-- 제안은 결정이 아닙니다. 질문의 전제나 애매한 동의를 합의로 만들지 않습니다. 결정은 확보된 사용자 발언 근거가 필요합니다.
-- 현재 위치와 진행 상태는 별개입니다. 떠난 주제를 자동 해결하지 않습니다. 사용자 수정 제목/상태는 AI 덮어쓰기에서 보호합니다.
-- **스킬은 매 턴 스케줄러가 아닙니다.** 문맥 압축·권한·지침 누락으로 갱신이 빠질 수 있습니다. AI 갱신 시각/오류를 보고 같은 CLI에서 sync하세요.
-- 패널 `x`는 서버에서 발행을 거절하게 합니다. 추가 추론·도구 호출까지 멈추려면 CLI에도 stop을 말하세요. 패널은 채팅 입력을 덮어쓰거나 명령을 몰래 제출하지 않습니다.
-- 기존 CLI의 추가 추론·도구 사용량이 발생할 수 있습니다. 별도 API 키가 없다는 것이 무료나 추가 토큰 0을 뜻하지 않습니다. 도구 호출은 CLI에 보일 수 있습니다.
-- 지도 오류는 본래 대화를 차단하지 않습니다. 스킬 재시도는 제한되어 있으며 재귀 응답이나 무한 루프를 만들지 않습니다.
-
-## 지도 표현
-
-`◀ 지금`은 실제 대화 위치, `◀ 안에서 대화 중`은 접힌 가지 속 현재 위치입니다. `○` 검토 중, `✓` 해결, `Ⅱ` 보류를 표시합니다. 선택은 실제 대화 위치를 바꾸지 않습니다. 추적은 기본 꺼짐이며 켜도 과거 가지 탐색 중 강제 이동하지 않습니다.
-
-상세에는 맥락·진행·남은 질문·확보된 원문을 표시합니다. 실제 관계/비교가 기록된 주제는 흐름도나 작은 표로 볼 수 있습니다. 같은 Topic 데이터로 그리며 LLM은 좌표·열 너비를 생성하지 않습니다. 원문이 없으면 연결 미지원으로 표시합니다. 네이티브 메시지 ID나 터미널 점프 링크를 만들지 않습니다.
-
-## 데모와 검증
+설정 변경 없이 직접 실행하는 기존 인터페이스도 유지합니다.
 
 ```text
-brainpane run --demo -- codex
+node bin/brainpane.mjs run --dormant -- codex
+node bin/brainpane.mjs run -- claude
 ```
 
-실제 CLI 옆에 예정된 8턴 패치를 재생합니다. 모델 호출용 프롬프트를 보내지 않으며 별도 API 키가 필요 없습니다. CLI 자체의 시작/로그인 조건은 그대로입니다. 패치는 실사용과 같은 HTTP → 검증 → 저장 → 패널 경로를 사용합니다. **데모 재생 성공은 LLM 의미 판단 검증이 아닙니다.**
+첫 명령은 지도를 숨기고 시작하고, 두 번째는 처음부터 지도를 활성화합니다. 프로젝트 스킬만 설치하려면 `node bin/brainpane.mjs install codex` / `install claude`를 사용합니다. **스킬 파일만 설치해서 이미 실행 중인 CLI 화면을 분할할 수는 없습니다.**
+
+## 동작 방식과 한계
+
+```text
+일반 codex / claude 명령 → 숨겨진 터미널 래퍼 → 실제 CLI + PTY + xterm 화면 해석
+사용자의 스킬 호출 → 현재 에이전트가 open → context → JSON publish
+                  → 검증 → 세션별 저장 → 같은 터미널 오른쪽 지도
+```
+
+PTY 출력은 왼쪽 화면 표시용입니다. ANSI 화면을 대화 원문으로 분석하지 않습니다. 공개 발언 해석은 현재 에이전트, 검증·저장·배치는 일반 코드가 맡습니다.
+
+노드는 메시지나 명사 단위가 아닌 주제 단위입니다. 기존 가지의 ID를 재사용하고, 주제 이동을 자동 해결로 취급하지 않습니다. 제안과 사용자 결정을 구분하며 결정에는 확보된 사용자 발언 근거가 필요합니다. 사용자 수정 제목·상태는 다음 AI 패치가 덮어쓰지 못합니다. 상세 흐름도·비교표도 같은 주제 데이터에서 그립니다.
+
+**스킬은 매 턴 실행되는 훅이 아닙니다.** 활성화 뒤에도 갱신이 누락될 수 있습니다. 마지막 갱신 시각·오류를 확인하고 `sync`하세요. `stop`하면 이후 지도 작업을 하지 않도록 지시하고 서버도 업데이트를 거절합니다. 지도 오류가 본래 대화를 막지 않도록 처리합니다.
+
+추가 추론·도구 호출은 기존 CLI 세션의 사용량을 소비할 수 있습니다. 별도 API 키가 없다는 것이 무료나 추가 토큰 0을 뜻하지 않습니다. 로컬 저장이 클라우드 CLI의 추론까지 오프라인으로 만들지는 않습니다.
+
+기본 저장 위치는 작업 폴더의 `.brainpane/runs/<map-id>/`이며 세션 폴더 안에 Git 제외 파일을 만듭니다. 프로젝트 `.gitignore`에도 `.brainpane/`를 추가하는 것이 좋습니다. 명시적 세션 바인딩을 전달하며 최신 로그를 추측하지 않습니다. 의미 상태와 화면 선택·접힘·스크롤을 분리합니다. 인증 정보 추출·기본 텔레메트리는 없습니다. 내부 API는 loopback·Host·Origin·접근 키와 패널의 세션 바인딩을 검증합니다.
+
+패치에는 스키마·중복·버전 충돌·참조·순환·사용자 잠금 검증을 적용하고, 실패 시 마지막 정상 상태를 유지합니다. 최대 300개 주제, 10,000개 업데이트, 요청 128 KiB입니다. 확보된 발언만 원문으로 표시하고 네이티브 메시지 ID나 터미널 점프 링크를 만들지 않습니다.
+
+## 검증과 기여
 
 ```text
 npm run build
 npm test
 npm run test:e2e
+npm run test:lifecycle
+node bin/brainpane.mjs run --demo -- codex
 ```
 
-상태·HTTP·VT·지도 테스트와 중첩 PTY 터미널 통합 테스트가 포함됩니다. 통합 테스트 fixture는 터미널 제어용이며, 이를 실제 AI 호환성이라고 보고하지 않습니다.
+데모는 8턴의 **예정된 패치 재생**입니다. 별도 API 키가 필요 없고 실사용과 같은 저장·표시 경로를 사용하지만, LLM 의미 판단의 검증은 아닙니다.
 
-설치된 실제 CLI/현재 로그인으로 4턴 발행·가지 재사용을 확인하는 선택적 테스트:
+설치된 CLI의 실제 로그인·사용량을 쓰는 선택적 검증:
 
 ```text
-npm run test:codex
-npm run test:claude
+node scripts/verify-on-demand.mjs codex
+node scripts/verify-on-demand.mjs claude
 ```
 
-**기존 CLI 사용량을 소비합니다.** CLI의 신뢰/권한 확인에서 대기할 수 있습니다. 전체 8턴 수동 평가는 [EVALUATION.md](docs/EVALUATION.md), 확인 환경/제약은 [VERIFICATION.md](docs/VERIFICATION.md)를 보세요.
+먼저 대화한 뒤 스킬을 호출해 초기 지도·중단·재개를 확인합니다. 테스트용 새 작업 폴더를 명시적으로 신뢰할 때만 `--trust-project`를 추가합니다. 한국어 완성 문자열·붙여넣기·문자 폭을 검증하며, 모든 호스트의 IME 조합·복잡한 이모지·확장 키보드/이미지 프로토콜을 지원한다고 주장하지 않습니다. 다른 OS와 터미널의 검증 여부는 기록을 보세요.
 
-## 구조와 저장
+[검증 기록](docs/VERIFICATION.md) · [의미 평가](docs/EVALUATION.md) · [패치 계약](skills/brainpane/protocol.md) · [기여 안내](CONTRIBUTING.md) · [MIT](LICENSE) · [의존성 라이선스](THIRD_PARTY.md)
 
-```text
-실제 AI CLI ── PTY 출력 ── xterm headless 화면 셀 ── 왼쪽 영역
-    └─ 현재 에이전트 스킬 ── JSON publish ── 검증·저장 ── 오른쪽 지도
-```
-
-`src/terminal`: 화면·입력·자식 수명·내장 터미널·지도. `src/core`: 의미 모델·검증·저장. `src/server`: 래퍼가 관리하는 내부 loopback API. `skills/brainpane`: 공통 스킬/패치 계약.
-
-PTY 출력은 **화면 표시용**이며 대화 원문 수집/의미 분석에 사용하지 않습니다. 화면 지우기·커서 이동·대체 화면은 xterm이 해석하고 셀 데이터만 왼쪽에 렌더링합니다. 터미널 에뮬레이터를 처음부터 작성하지 않았습니다.
-
-Rust/Ratatui/portable-pty/tui-term을 우선 검토했습니다. 기존 TypeScript 상태 엔진을 유지하고 Windows에서 실제 실행 검증한 node-pty + xterm headless를 선택했습니다. Rust나 브라우저 런타임은 필요 없습니다. 이전 웹 코드는 `src/web`와 `web-legacy` 경로에 보존한 **과거 구현**이며 기본 실행·완료 기준에 포함하지 않습니다.
-
-저장 위치는 실행 프로젝트의 `.brainpane/runs/<map-id>/`입니다. 의미 snapshot과 별도 view.json(선택/접힘/상세/스크롤), 내부 접근 키/실행 정보를 보관합니다. 첫 실제 질문으로 원래 목표를 초기화하고 이후 변경 이력을 보존합니다. 프로젝트의 `.gitignore`에 `.brainpane/`를 추가하세요.
-
-내부 API는 loopback만 사용하며 Host·Origin·접근 키를 검증합니다. run에서는 웹 UI를 제공하지 않습니다. 실패 패치는 정상 상태를 보존하고, 오래된 버전은 충돌로 거절하며 같은 업데이트를 중복 적용하지 않습니다. 참조·순환·단일 루트·사용자 보호 필드·결정 및 표/흐름의 출처 참조를 검증합니다. 대화 의미의 정확성까지 스키마가 증명하지는 못합니다.
-
-최대 300개 주제, 10,000개 업데이트, 요청 128 KiB입니다. 파일은 임시 작성 후 rename으로 교체합니다. 평문 로컬 데이터는 OS 계정 권한의 보호를 받습니다. 디스크 손상 복구/마이그레이션은 아직 없습니다. 기본 텔레메트리와 인증 정보 추출은 없습니다. 로컬 지도 저장이 기존 클라우드 CLI의 추론까지 오프라인으로 만들지는 않습니다.
-
-## 지원 경계와 라이선스
-
-Windows ConPTY에서 실제 Codex/Claude 화면을 확인하며 개발했습니다. 모든 호스트·OS·버전 조합의 100% 호환성을 주장하지 않습니다. 한국어 완성 문자열/붙여넣기·문자 폭을 검증하며 IME 조합 과정과 복잡한 이모지 폭에는 호스트 영향이 남습니다. Sixel/Kitty 이미지, 확장 키보드 프로토콜 전체, 자식 OSC 클립보드 전달은 지원하지 않습니다.
-
-이슈에는 OS·호스트·Node/CLI 버전과 개인정보를 뺀 재현 방법을 남겨주세요. 실제 대화·인증 정보·`.brainpane/`·전체 터미널 로그는 첨부하지 마세요.
-
-2026-09-09에 [node-pty](https://github.com/microsoft/node-pty), [xterm headless](https://github.com/xtermjs/xterm.js#nodejs-support), [화면 셀 API](https://xtermjs.org/docs/api/terminal/interfaces/ibuffercell/), [Ratatui](https://ratatui.rs/), [portable-pty](https://docs.rs/portable-pty/latest/portable_pty/), [tui-term](https://docs.rs/tui-term/latest/tui_term/) 문서를 확인했습니다. 스킬 경로와 호출은 [Codex 공식 Skills](https://learn.chatgpt.com/docs/build-skills), [Claude 공식 Skills](https://code.claude.com/docs/en/skills)를 따릅니다.
-
-[패치 프로토콜](skills/brainpane/protocol.md) · [MIT](LICENSE) · [의존성 라이선스](THIRD_PARTY.md)
+과거 웹 UI는 `src/web`에 보존한 실험 코드이며 기본 경로가 아닙니다. [0.1 실행 안내](docs/terminal-0.1.md)는 이전 버전 기록입니다.

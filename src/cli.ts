@@ -9,11 +9,15 @@ import { id } from './core/model.js';
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const { values, positionals, childArgs } = parseCliArgs(process.argv.slice(2));
 const dataDir = resolve(values.data || process.env.BRAINPANE_DATA_DIR || '.brainpane'); const command = positionals[0];
-function session() { return id.parse(values.session || process.env.BRAINPANE_SESSION); }
+function session() {
+  const key = values.session || process.env.BRAINPANE_SESSION;
+  if (!key) throw new Error('No bound Brainpane session. Open a new configured terminal and restart codex/claude, or use brainpane run --dormant -- codex.');
+  return id.parse(key);
+}
 async function request(path: string, payload?: unknown) {
   let runtime;
   try { runtime = JSON.parse(await readFile(join(dataDir, 'runtime.json'), 'utf8')); }
-  catch { throw new Error('Start the server first with the same --data directory.'); }
+  catch { throw new Error('No running Brainpane session in this data directory. Start the CLI through the configured shell or brainpane run.'); }
   const url = new URL(runtime.origin);
   if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1') throw new Error('Invalid local server address');
   const response = await fetch(`${url.origin}/api/${path}`, {
@@ -24,11 +28,20 @@ async function request(path: string, payload?: unknown) {
   const result = await response.json() as any;
   if (!response.ok) throw new Error(`${response.status}: ${result.error}`); return result;
 }
-if (command === 'run') {
+if (command === 'setup' || command === 'uninstall' || command === 'doctor' || command === 'recover') {
+  const integration = await import('./setup.js');
+  const result = command === 'setup' ? await integration.setup({ packageRoot, home: values.home, shell: values.shell, profile: values.profile }) : command === 'uninstall' ? await integration.uninstall(values.home) : command === 'recover' ? await integration.recover(values.home) : await integration.doctor(values.home);
+  console.log(JSON.stringify(result, null, 2));
+} else if (command === 'launch') {
+  const { launch } = await import('./launcher.js');
+  process.exit(await launch(childArgs[0], childArgs.slice(1)));
+} else if (command === 'run') {
   if (!childArgs.length) throw new Error('Use brainpane run [--session ID] -- codex or -- claude');
   const { run } = await import('./terminal/run.js');
-  const code = await run({ command: childArgs[0], args: childArgs.slice(1), session: values.session, data: values.data, width: values.width, prefix: values.prefix, bootstrap: !values['no-bootstrap'], demo: values.demo });
+  const code = await run({ command: childArgs[0], args: childArgs.slice(1), session: values.session, data: values.data, width: values.width, prefix: values.prefix, bootstrap: !values['no-bootstrap'], demo: values.demo, dormant: values.dormant });
   process.exit(code);
+} else if (command === 'open' || command === 'sync' || command === 'hide' || command === 'ready') {
+  console.log(JSON.stringify(await request(`sessions/${session()}/panel`, { action: command })));
 } else if (command === 'start') {
   throw new Error('Use brainpane run -- codex or brainpane run -- claude. Server and map run inside the same terminal.');
 } else if (command === 'web-legacy') {
@@ -63,7 +76,8 @@ if (command === 'run') {
   const s = await request(`sessions/${session()}/publish`, JSON.parse(raw.replace(/^\uFEFF/, '')));
   console.log(JSON.stringify({ id: s.id, version: s.version, focusTopicId: s.focusTopicId }));
 } else if (command === 'stop' || command === 'resume') {
-  const s = await request(`sessions/${session()}/active`, command === 'resume');
+  const runtime = JSON.parse(await readFile(join(dataDir, 'runtime.json'), 'utf8'));
+  const s = runtime.terminalSession ? await request(`sessions/${session()}/panel`, { action: command === 'stop' ? 'close' : 'open' }) : await request(`sessions/${session()}/active`, command === 'resume');
   console.log(JSON.stringify({ id: s.id, active: s.active, version: s.version }));
 } else if (command === 'install') {
   const target = positionals[1]; if (target !== 'codex' && target !== 'claude') throw new Error('Use install codex or install claude');
@@ -71,11 +85,10 @@ if (command === 'run') {
   const dest = join(project, target === 'codex' ? '.agents' : '.claude', 'skills', 'brainpane');
   await mkdir(dirname(dest), { recursive: true });
   await mkdir(dest).catch(() => { throw new Error(`Refusing to overwrite ${dest}. Inspect/remove it before reinstalling.`); });
-  const template = await readFile(join(packageRoot, 'skills/brainpane/SKILL.md'), 'utf8');
-  await writeFile(join(dest, 'SKILL.md'), template);
-  await writeFile(join(dest, 'protocol.md'), await readFile(join(packageRoot, 'skills/brainpane/protocol.md'), 'utf8'));
-  await writeFile(join(dest, 'bridge.mjs'), `// Generated project-local adapter. No shell, hooks, transcript access or auth extraction.\nimport { spawn } from 'node:child_process';\nconst child = spawn(process.execPath, [${JSON.stringify(join(packageRoot, 'bin/brainpane.mjs'))}, ...process.argv.slice(2), '--data', process.env.BRAINPANE_DATA_DIR || ${JSON.stringify(join(project, '.brainpane'))}], { stdio: 'inherit', windowsHide: true });\nchild.on('error', () => { console.error('Brainpane unavailable; continue the conversation.'); process.exitCode = 1; });\nchild.on('exit', code => { process.exitCode = code ?? 1; });\n`);
-  console.log(`Installed ${dest}\nFiles: SKILL.md, protocol.md, bridge.mjs\nNo existing settings or hooks changed.\nRemove those three files and the empty brainpane directory to uninstall.\nRestart CLI if skill is not discovered. Invocation: ${target === 'codex' ? '$brainpane' : '/brainpane'} start`);
+  const { skillFiles } = await import('./skill-files.js');
+  const files = await skillFiles(packageRoot, target);
+  for (const [file, content] of Object.entries(files)) { await mkdir(dirname(join(dest, file)), { recursive: true }); await writeFile(join(dest, file), content); }
+  console.log(`Installed ${dest}\nFiles: ${Object.keys(files).join(', ')}\nSkill only; use brainpane setup for ordinary codex/claude shell integration. No existing settings or hooks changed.\nRemove the listed files to uninstall this project skill.\nRestart CLI if skill is not discovered. Invocation: ${target === 'codex' ? '$brainpane' : '/brainpane'} start`);
 } else if (command === 'demo') {
   const key = values.session || `demo-${Date.now()}`; id.parse(key);
   const fixture = JSON.parse(await readFile(join(packageRoot, 'fixtures/demo.json'), 'utf8'));
@@ -89,5 +102,5 @@ if (command === 'run') {
   }
   console.log(`Recorded patch replay complete. Session: ${key}. This does not evaluate LLM interpretation.`);
 } else {
-  console.log('brainpane run [--session ID] [--width 40] [--prefix ctrl-]] [--no-bootstrap] [--demo] -- codex|claude [CLI args]\nbrainpane install codex|claude [--project path]\nbrainpane context [--session ID]\nbrainpane publish [--session ID] --file path.json|-\nbrainpane stop|resume [--session ID]\nInside the child, session and data directory are inherited automatically. No browser or second terminal.');
+  console.log('brainpane setup [--shell powershell|bash|zsh] [--profile path]\nbrainpane doctor\nbrainpane uninstall\nAfter setup: open a new terminal, run codex or claude, then invoke $brainpane start or /brainpane start.\nbrainpane run [--dormant] [--session ID] [--width 40] [--prefix ctrl-]] [--no-bootstrap] [--demo] -- codex|claude [CLI args]\nbrainpane install codex|claude [--project path] (skill only)\nbrainpane open|sync|hide|stop|resume [--session ID]\nbrainpane context [--session ID]\nbrainpane publish [--session ID] --file path.json|-\nInside the child, session and data directory are inherited automatically. No browser or second terminal.');
 }

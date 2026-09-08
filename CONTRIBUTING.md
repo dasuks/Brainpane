@@ -1,5 +1,9 @@
 # Contributing
 
+For the 0.2 lifecycle run `npm run build`, `npm test`, `npm run test:e2e`, and `npm run test:lifecycle`. The CI matrix covers Windows/Linux/macOS deterministic checks. `scripts/verify-on-demand.mjs` is an opt-in test with real CLI usage: converse before activation, invoke the skill, stop, and reopen. Never treat deterministic fixtures as evidence of LLM semantic quality.
+
+Installer changes must preserve existing profiles, aliases, functions and edited skills. Add regressions for ownership/rollback and argument forwarding. Keep integration instructions in `docs/INSTALL.md` executable by a person or agent installing from the GitHub link. Do not add API credentials, auto-updaters or transcript scraping to the default path.
+
 Install with `npm ci`, build with `npm run build`, then run `npm test` and `npm run test:e2e`. The terminal E2E uses a deterministic VT fixture, not a paid model.
 
 For a CLI adapter or terminal change, also perform an opt-in actual CLI check (`npm run test:codex` / `npm run test:claude`). Those use the CLI's existing account usage. Report the OS, host, Node/CLI versions, exact reproduction and what was/was not verified.

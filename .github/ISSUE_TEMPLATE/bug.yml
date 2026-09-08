@@ -1,0 +1,21 @@
+name: Bug report
+description: Report a reproducible terminal, installation, or mapping issue.
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, terminal host, shell, Node version and Codex/Claude version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected/actual behavior
+      description: Use a synthetic conversation. Do not attach private chats, credentials, full terminal logs, profiles or .brainpane data.
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Brainpane commit or version

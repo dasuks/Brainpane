@@ -28,7 +28,7 @@ export const patchSchema = z.object({
     z.object({ type: z.literal('goal'), goal: short, evidence: sourceSchema.refine(s => s.role === 'user', 'User evidence required') }).strict(),
   ])).min(1).max(30),
 }).strict();
-export const createSchema = z.object({ id, goal: short, rootTitle: short, waitingForGoal: z.boolean().optional(),
+export const createSchema = z.object({ id, goal: short, rootTitle: short, waitingForGoal: z.boolean().optional(), active: z.boolean().optional(),
   binding: z.object({ cli: z.enum(['codex', 'claude', 'demo']), conversation: short }).strict() }).strict();
 export const sessionSchema = z.object({
   id, goal: short, originalGoal: short, goalHistory: z.array(z.object({ goal: short, evidence: sourceSchema }).strict()),
@@ -70,7 +70,7 @@ export function createSession(input: unknown): Session {
   const c = createSchema.parse(input);
   return { id: c.id, goal: c.goal, originalGoal: c.goal, goalHistory: [], binding: c.binding,
     rootTopicId: 'root', focusTopicId: 'root', certainty: 'confirmed', reason: null,
-    active: true, version: 0, updatedAt: new Date().toISOString(), lastAgentUpdateAt: null, waitingForGoal: c.waitingForGoal || false, lastUpdateBy: 'system', receipts: [],
+    active: c.active ?? true, version: 0, updatedAt: new Date().toISOString(), lastAgentUpdateAt: null, waitingForGoal: c.waitingForGoal || false, lastUpdateBy: 'system', receipts: [],
     topics: [{ id: 'root', parentId: null, title: c.rootTitle, summary: '', progress: '', remaining: '', status: 'open', sources: [], statements: [], locks: [] }] };
 }
 export function applyPatch(previous: Session, input: unknown, hash: string): Session {

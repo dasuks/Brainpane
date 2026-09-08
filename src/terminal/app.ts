@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { EmbeddedTerminal, executable } from './child.js';
 import { InputDecoder, type Input } from './input.js';
 import { childRows, esc, fit, Painter, selectionText, type Selection } from './render.js';
+import type { PanelControl } from './control.js';
 
 export type Panel = {
   render(width: number, height: number): string[];
@@ -10,14 +11,15 @@ export type Panel = {
   click(row: number): void;
   close(): Promise<void>;
 };
-export type AppOptions = { command: string; args: string[]; env: Record<string, string>; width: number; prefix: string; panel: Panel };
+export type AppOptions = { command: string; args: string[]; env: Record<string, string>; width: number; prefix: string; panel: Panel; control?: PanelControl; hidden?: boolean; onSpawn?: () => void };
 
 export async function terminalApp(options: AppOptions) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('brainpane run requires an interactive terminal (TTY).');
   const resolved = await executable(options.command, options.args);
   const output = process.stdout; const input = process.stdin;
   const painter = new Painter(); let dirty = true, stopped = false, exitCode = 0, focus: 'cli' | 'map' = 'cli';
-  let shown = true, width = options.width, prefixPending = false, copyMode = false, help = false, status = '';
+  let shown = !options.hidden, width = options.width, prefixPending = false, copyMode = false, help = false, status = '';
+  let controlRevision = 0;
   let selection: Selection | null = null;
   const size = () => ({ cols: Math.max(10, output.columns || 80), rows: Math.max(5, output.rows || 24) });
   const geometry = () => {
@@ -29,6 +31,7 @@ export async function terminalApp(options: AppOptions) {
   const initial = geometry();
   const term = new EmbeddedTerminal(resolved.file, resolved.args, initial.cliWidth || initial.cols, initial.cliRows,
     options.env, () => { dirty = true; }, code => { exitCode = code; stopped = true; });
+  options.onSpawn?.();
   const oldRaw = input.isRaw;
   const restore = () => {
     if (input.isTTY) input.setRawMode(!!oldRaw);
@@ -122,6 +125,15 @@ export async function terminalApp(options: AppOptions) {
     input.on('data', onInput); input.on('error', onError); output.on('error', onError); output.on('resize', onResize);
     process.on('SIGTERM', onSignal); process.on('SIGHUP', onSignal); process.on('SIGINT', onSignal);
     while (!stopped) {
+      if (options.control && options.control.revision !== controlRevision) {
+        controlRevision = options.control.revision;
+        shown = options.control.action === 'open' || options.control.action === 'sync';
+        // Preserve typing focus on wide screens. Narrow screens announce the
+        // newly opened map; the standard toggle returns to the same CLI.
+        if (!shown) focus = 'cli';
+        else if (size().cols < 88) focus = 'map';
+        onResize();
+      }
       if (dirty && !output.writableNeedDrain) {
         dirty = false; const g = geometry(); const left = g.cliWidth ? childRows(term, g.cliWidth, g.cliRows, selection) : [];
         const right = g.mapWidth ? options.panel.render(g.mapWidth, g.cliRows) : [];

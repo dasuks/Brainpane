@@ -53,6 +53,7 @@ export function topicDetail(t: Topic, width: number): string[] {
   return lines;
 }
 export class MapPanel implements Panel {
+  syncStartedAt: number | null = null;
   view = newMapView(); error = ''; notice = ''; private rowIds = new Map<number, string>();
   private editTitle: string | null = null; private busy = false; private saveQueue = Promise.resolve();
   private lastFocus: string; private seen = new Set<string>(); private availableRows = 10;
@@ -139,7 +140,7 @@ export class MapPanel implements Panel {
       for (const row of wrap(this.editTitle + '▏', w)) add(row, '7');
       add('수정한 제목은 AI 덮어쓰기에서 보호됩니다.');
     } else {
-      const footer = [this.error ? `! 갱신 실패: ${this.error}` : this.notice,
+      const footer = [this.error ? `! 갱신 실패: ${this.error}` : this.syncStartedAt && Date.now() - this.syncStartedAt > 60000 ? '갱신 대기 · CLI 응답/권한을 확인하거나 sync하세요.' : this.notice,
         `${s.lastAgentUpdateAt ? `AI 갱신 ${new Date(s.lastAgentUpdateAt).toLocaleTimeString('ko-KR')}` : 'AI 갱신 대기'} · v${s.version}`,
         `${this.view.follow ? '추적 켜짐' : '추적 꺼짐'} · ${this.view.selected && this.view.selected !== s.focusTopicId ? '과거 가지 탐색 중' : '현재 가지 보기'}`,
         '↑↓ 선택 · ←→ 접기 · Enter 상세 · n 현재'];

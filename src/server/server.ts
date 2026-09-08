@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFile, mkdir, writeFile, unlink } from 'node:fs/promises';
 import { join, resolve, extname } from 'node:path';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { Store, atomicWrite } from '../core/store.js';
 import { Fault } from '../core/model.js';
 
@@ -13,7 +13,7 @@ async function body(req: IncomingMessage) {
   for await (const chunk of req) { size += chunk.length; if (size > 128 * 1024) throw new Fault(413, 'Update exceeds 128 KiB'); chunks.push(Buffer.from(chunk)); }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new Fault(400, 'Invalid JSON'); }
 }
-export async function startServer(options: { dataDir: string; webDir: string; port: number; serveWeb?: boolean; onEvent?: (event: any) => void }) {
+export async function startServer(options: { dataDir: string; webDir: string; port: number; serveWeb?: boolean; terminalSession?: string; onEvent?: (event: any) => void }) {
   const dataDir = resolve(options.dataDir); await mkdir(dataDir, { recursive: true, mode: 0o700 });
   const lockPath = join(dataDir, 'server.lock');
   try { await writeFile(lockPath, String(process.pid), { flag: 'wx', mode: 0o600 }); }
@@ -75,11 +75,22 @@ export async function startServer(options: { dataDir: string; webDir: string; po
           if (req.method === 'GET') return json(res, 200, await store.list());
           if (req.method === 'POST') { const s = await store.create(await body(req)); broadcast({ type: 'state', session: s }); return json(res, 201, s); }
         }
-        const match = /^\/api\/sessions\/([a-zA-Z0-9_-]+)(?:\/(publish|edit|active))?$/.exec(url.pathname);
+        const match = /^\/api\/sessions\/([a-zA-Z0-9_-]+)(?:\/(publish|edit|active|panel))?$/.exec(url.pathname);
         if (match) {
           sessionId = match[1];
           if (req.method === 'GET' && !match[2]) return json(res, 200, await store.get(sessionId));
           if (req.method === 'POST' && match[2]) {
+            if (match[2] === 'panel') {
+              if (!options.terminalSession || sessionId !== options.terminalSession) throw new Fault(404, 'No terminal panel bound to this session');
+              const { action } = z.object({ action: z.enum(['open', 'sync', 'hide', 'close', 'ready']) }).strict().parse(await body(req));
+              let s = await store.get(sessionId);
+              if ((action === 'sync' || action === 'ready') && !s.active) throw new Fault(409, 'Mapping stopped; explicitly start to resume');
+              if (action === 'open' && !s.active) s = await store.mutate(sessionId, 'active', true);
+              if (action === 'close' && s.active) s = await store.mutate(sessionId, 'active', false);
+              broadcast({ type: 'state', session: s });
+              broadcast({ type: 'panel', sessionId, action });
+              return json(res, 200, { id: s.id, active: s.active, version: s.version, panel: action });
+            }
             const s = await store.mutate(sessionId, match[2] as 'publish' | 'edit' | 'active', await body(req));
             broadcast({ type: 'state', session: s }); return json(res, 200, s);
           }
@@ -107,7 +118,7 @@ export async function startServer(options: { dataDir: string; webDir: string; po
     await new Promise<void>((ok, fail) => { server.once('error', fail); server.listen(options.port, '127.0.0.1', () => ok()); });
     const address = server.address(); if (!address || typeof address === 'string') throw new Error('Missing address');
     origin = `http://127.0.0.1:${address.port}`;
-    await atomicWrite(join(dataDir, 'runtime.json'), JSON.stringify({ origin, token, pid: process.pid }));
+    await atomicWrite(join(dataDir, 'runtime.json'), JSON.stringify({ origin, token, pid: process.pid, terminalSession: options.terminalSession }));
   } catch (e) { server.close(); await unlink(lockPath); throw e; }
   const heartbeat = setInterval(() => { for (const res of clients) res.write(': heartbeat\n\n'); }, 15000);
   async function close() {

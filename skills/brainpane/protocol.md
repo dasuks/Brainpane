@@ -4,13 +4,17 @@ Commands after `node "<skill-directory>/bridge.mjs"`:
 
 ```text
 context --session ID
+open
+sync
+hide
+ready
 begin --session ID --goal "Original question" --title "Short root topic" --cli codex --conversation "Explicit conversation label"
 publish --session ID --file "absolute/path.json"
 stop --session ID
 resume --session ID
 ```
 
-`brainpane run -- codex|claude` manages the internal service and exports BRAINPANE_SESSION, BRAINPANE_DATA_DIR and BRAINPANE_COMMAND to the child. Inside that child, omit `--session` and `--data` to use the exact inherited binding. No server/browser/second terminal needs to be launched. Use `node "<BRAINPANE_COMMAND value>" ...` or the installed bridge. Runtime ports are ephemeral. `--cli` must match the actual agent. The map's explicit binding label is not a native CLI message/session ID.
+After `brainpane setup`, normal `codex`/`claude` commands start a dormant wrapper. It manages the internal service and exports BRAINPANE_SESSION, BRAINPANE_DATA_DIR and BRAINPANE_COMMAND to that exact child. `open` shows the bound terminal panel and activates mapping; `sync` shows progress but rejects stopped maps; `hide` hides without stopping; `stop` stops mapping and closes the panel; `resume` explicitly reopens. Existing topics and user corrections survive stop/start. `begin` is only a legacy standalone-service command, never needed inside a wrapper. Inside the child, omit `--session` and `--data` to use its inherited binding. Never launch another server/browser/terminal. Use `node "<BRAINPANE_COMMAND value>" ...` or the installed bridge. Runtime ports are ephemeral. The map ID is not a native CLI message/session ID.
 
 Patch object: `updateId` (unique stable ID for retries), `baseVersion` (integer), `operations` (1–30). Unknown fields are rejected. IDs match `[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}`. Titles/goals: 1–140 characters. Summaries/progress/remaining/reason: max 1200 characters. Max 300 topics; max 128 KiB request. No coordinates, selection, viewport, delete, reparent or full-state replacement operations.
 

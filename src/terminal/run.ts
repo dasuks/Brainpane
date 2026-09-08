@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../server/server.js';
@@ -7,13 +7,18 @@ import { id } from '../core/model.js';
 import { MapPanel } from './panel.js';
 import { terminalApp } from './app.js';
 import { executable } from './child.js';
+import { PanelControl } from './control.js';
 
-export async function run(options: { command: string; args: string[]; session?: string; data?: string; width?: string; prefix?: string; bootstrap?: boolean; demo?: boolean }) {
+export async function run(options: { command: string; args: string[]; session?: string; data?: string; width?: string; prefix?: string; bootstrap?: boolean; demo?: boolean; dormant?: boolean; onSpawn?: () => void }) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('Run Brainpane in an interactive terminal. No browser or second terminal is needed.');
   const resolved = await executable(options.command, options.args);
   const mapId = id.parse(options.session || `map-${randomUUID().slice(0, 8)}`);
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
   const dataDir = resolve(options.data || join('.brainpane', 'runs', mapId));
+  if (!options.data) {
+    await mkdir(dataDir, { recursive: true, mode: 0o700 });
+    await writeFile(join(dataDir, '.gitignore'), '*\n', { flag: 'wx', mode: 0o600 }).catch(e => { if (e.code !== 'EEXIST') throw e; });
+  }
   const width = Number(options.width || 40);
   if (!Number.isInteger(width) || width < 28 || width > 90) throw new Error('--width must be 28..90 columns');
   const prefixName = options.prefix || 'ctrl-]';
@@ -21,8 +26,19 @@ export async function run(options: { command: string; args: string[]; session?: 
   const prefix = String.fromCharCode(prefixName.slice(5).toUpperCase().charCodeAt(0) & 31);
   if (['\x03', '\r', '\t', '\x1b'].includes(prefix)) throw new Error('Do not reserve Ctrl+C, Enter, Tab or Escape; choose another prefix');
   let panel: MapPanel | undefined;
-  const server = await startServer({ dataDir, port: 0, webDir: '', serveWeb: false, onEvent: event => {
-    if (event.type === 'state') panel?.update(event.session);
+  const control = new PanelControl();
+  const server = await startServer({ dataDir, port: 0, webDir: '', serveWeb: false, terminalSession: mapId, onEvent: event => {
+    if (event.type === 'state') {
+      if (panel && event.session.id === mapId && event.session.lastUpdateBy === 'agent' && event.session.version > panel.state.version) { control.ready(); panel.notice = ''; panel.syncStartedAt = null; }
+      panel?.update(event.session);
+    }
+    else if (event.type === 'panel' && event.sessionId === mapId) {
+      if (event.action === 'ready') control.ready(); else control.request(event.action);
+      if (panel) {
+        panel.syncStartedAt = control.loadingSince;
+        panel.notice = event.action === 'open' || event.action === 'sync' ? '지금까지의 대화를 정리 중 · CLI에서 계속 대화할 수 있습니다.' : '';
+      }
+    }
     else if (event.type === 'error' && panel) panel.error = event.message;
   } });
   let timer: NodeJS.Timeout | undefined;
@@ -31,17 +47,18 @@ export async function run(options: { command: string; args: string[]; session?: 
     try { state = await server.store.get(mapId); }
     catch (e) {
       if ((e as { status?: number }).status !== 404) throw e;
-      state = await server.store.create({ id: mapId, goal: '첫 질문을 기다립니다', rootTitle: '대화 시작 대기', waitingForGoal: true,
+      state = await server.store.create({ id: mapId, goal: '첫 질문을 기다립니다', rootTitle: '대화 시작 대기', waitingForGoal: true, active: !options.dormant,
         binding: { cli: resolved.adapter || 'demo', conversation: `${options.command} · ${mapId}` } });
     }
     if (resolved.adapter && state.binding.cli !== resolved.adapter && !options.demo) throw new Error('This map belongs to another CLI. Choose a new --session.');
-    if (!state.active) state = await server.store.mutate(mapId, 'active', true);
+    if (!options.dormant && !state.active) state = await server.store.mutate(mapId, 'active', true);
+    if (options.dormant && state.active) state = await server.store.mutate(mapId, 'active', false);
     panel = new MapPanel(state, dataDir, async (kind, value) => server.store.mutate(mapId, kind, value)); await panel.init();
     const env = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
-    Object.assign(env, { BRAINPANE_SESSION: mapId, BRAINPANE_DATA_DIR: dataDir, BRAINPANE_CLI: resolved.adapter || '', BRAINPANE_COMMAND: join(root, 'bin/brainpane.mjs'), BRAINPANE_SKILL: join(root, 'skills/brainpane/SKILL.md') });
+    Object.assign(env, { BRAINPANE_WRAPPED: '1', BRAINPANE_SESSION: mapId, BRAINPANE_DATA_DIR: dataDir, BRAINPANE_CLI: resolved.adapter || '', BRAINPANE_COMMAND: join(root, 'bin/brainpane.mjs'), BRAINPANE_SKILL: join(root, 'skills/brainpane/SKILL.md') });
     let args = [...options.args];
     if (!resolved.adapter) panel.notice = '화면 실행만 지원 · 이 CLI의 지도 어댑터는 없습니다.';
-    else if (options.bootstrap !== false && args.length === 0 && !options.demo) {
+    else if (!options.dormant && options.bootstrap !== false && args.length === 0 && !options.demo) {
       const prompt = `Brainpane terminal mapping is explicitly enabled for this CLI conversation. Read the Brainpane skill at ${JSON.stringify(env.BRAINPANE_SKILL)} and its protocol. Use node ${JSON.stringify(env.BRAINPANE_COMMAND)} for local commands; BRAINPANE_SESSION and BRAINPANE_DATA_DIR already bind this process to map ${mapId}. The server is managed by the wrapper; do not start any server/browser or other model. Read context once, then maintain small updates after meaningful public conversation changes. This startup instruction is control metadata, NOT the user's original question: preserve waitingForGoal until their first substantive message. When it arrives, initialize the goal with its captured user evidence and update the root title. Respond to this startup only with a short readiness sentence. Do not analyze repository files, hidden reasoning, terminal output or tool logs for the map. Stop/sync follow the skill.`;
       if (resolved.adapter === 'claude') {
         // Official invocation-only extension of Claude's default instructions.
@@ -75,6 +92,6 @@ export async function run(options: { command: string; args: string[]; session?: 
         finally { pending = false; }
       }, 1100);
     }
-    return await terminalApp({ command: options.command, args, env, width, prefix, panel });
+    return await terminalApp({ command: options.command, args, env, width, prefix, panel, control, hidden: options.dormant, onSpawn: options.onSpawn });
   } finally { clearInterval(timer); await server.close(); }
 }
