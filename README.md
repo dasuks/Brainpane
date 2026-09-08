@@ -9,6 +9,8 @@ brainpane run -- codex
 brainpane run -- claude
 ```
 
+PowerShell의 npm 실행 스크립트가 `--`를 소비하는 경우도 지원합니다. `brainpane run claude`처럼 구분자를 생략해도 됩니다. Brainpane 옵션은 실행할 CLI 이름 앞에, 해당 CLI의 옵션은 이름 뒤에 둡니다.
+
 왼쪽은 기존 로그인·세션을 사용하는 **실제 AI CLI**, 오른쪽은 출발점·현재 경로·미결/보류한 가지가 남는 고정 패널입니다. 내부 프로세스는 Brainpane이 시작하고 종료합니다. 별도 서버·브라우저·두 번째 터미널·tmux·zellij·호스트 전용 API가 필요하지 않습니다.
 
 MVP / MIT. 갱신은 현재 에이전트의 스킬 지침에 따른 방식이며, **매 턴 실행을 강제하는 훅은 없습니다**. 누락 시 재동기화를 제공합니다.

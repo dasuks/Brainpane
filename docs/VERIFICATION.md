@@ -12,6 +12,7 @@ Validated on 2026-09-09. Claims below concern the terminal implementation, not t
 
 ## Completed checks
 
+- PowerShell npm-launcher regression: both preserved and consumed `--` separators, wrapper/child option separation, and npm-style `.ps1` argument forwarding checked. The globally linked `brainpane run --no-bootstrap -- claude --version` also launched real Claude 2.1.263 inside the terminal and exited successfully. Current test total: 16 including these two regression tests.
 - TypeScript build.
 - Clean installation from only tracked source files in a separate temporary directory: `npm ci`, `npm run build`, `npm test`, and `npm run test:e2e` all passed. No local skill installation or existing build output was copied.
 - 14 unit/integration tests: reducer atomicity/schema, duplicates/stale revision, user protection, decision evidence, stable selection/layout, eight-turn fixture, storage restore/isolation/concurrency/stop, real publish command → saved state → event delivery, Host/Origin/access validation, installers refusing overwrites, VT clipping/alternate screen/CJK width, cursor query/paste mode, fragmented paste, terminal map selection/detail persistence, evidence-backed table rendering.

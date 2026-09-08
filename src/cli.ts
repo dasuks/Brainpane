@@ -2,19 +2,12 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { parseArgs } from 'node:util';
+import { parseCliArgs } from './arguments.js';
 import { startServer } from './server/server.js';
 import { id } from './core/model.js';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const argv = process.argv.slice(2); const separator = argv.indexOf('--');
-const childArgs = argv[0] === 'run' && separator >= 0 ? argv.slice(separator + 1) : [];
-const { values, positionals } = parseArgs({ args: argv[0] === 'run' && separator >= 0 ? argv.slice(0, separator) : argv, allowPositionals: true, options: {
-  session: { type: 'string' }, file: { type: 'string' }, goal: { type: 'string' }, title: { type: 'string' },
-  cli: { type: 'string' }, conversation: { type: 'string' }, data: { type: 'string' },
-  project: { type: 'string' }, port: { type: 'string' }, open: { type: 'boolean' }, interval: { type: 'string' },
-  width: { type: 'string' }, prefix: { type: 'string' }, 'no-bootstrap': { type: 'boolean' }, demo: { type: 'boolean' },
-} });
+const { values, positionals, childArgs } = parseCliArgs(process.argv.slice(2));
 const dataDir = resolve(values.data || process.env.BRAINPANE_DATA_DIR || '.brainpane'); const command = positionals[0];
 function session() { return id.parse(values.session || process.env.BRAINPANE_SESSION); }
 async function request(path: string, payload?: unknown) {
