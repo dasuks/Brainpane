@@ -29,8 +29,13 @@ try {
     if (cli === 'claude' && process.argv.includes('--trust-project') && !trusted && text().includes('Yes, I trust this folder') && text().includes(process.cwd())) {
       trusted = true; child.write('\x1b[B'); await sleep(200); child.write('\r');
     }
+    if (cli === 'claude') return text().includes('Claude Code') && /[❯>]/.test(text()) && !text().includes('Yes, I trust this folder');
     return /(?:[•●].*(?:Brainpane.*ready|지도.*준비)|Brainpane is ready)/i.test(text());
   }, 'skill bootstrap');
+  if (cli === 'claude') {
+    if (text().includes('Brainpane terminal mapping is explicitly enabled')) throw new Error('Internal instruction leaked into chat');
+    if ((await load()).version !== 0) throw new Error('Map updated before the first user question');
+  }
   const turns = [
     'LLM이랑 얘기하다 보면 대화가 어디로 이어지는지 놓쳐. 같은 터미널 안에서 지도로 보여줄 수 있을까? 코드는 수정하지 말고 아이디어만 두 문장으로 답해 줘.',
     '근데 작은 터미널에서 글자만으로 지도가 잘 보일지 가시성을 이야기해 보자. 아직 표시 방식을 확정한 건 아니야.',

@@ -50,6 +50,8 @@ Windows에서는 node-pty의 ConPTY를 사용합니다. 이 Windows x64 / Node 2
 
 좁은 터미널에서는 같은 화면에서 채팅과 지도를 전환합니다. 크기 변경은 자식 PTY에도 전달됩니다. 접두키와 초기 폭은 설정 가능합니다.
 
+`● claude · 채팅 입력`은 왼쪽에 입력 중이라는 뜻입니다. 지도에 포커스가 있을 때는 하단에 채팅 복귀 방법을 표시합니다. 왼쪽 클릭 또는 `Ctrl+]` 다음 `Tab`으로 돌아갑니다. 지도 위의 휠·마우스 이동은 키보드 포커스를 바꾸지 않습니다.
+
 ```text
 brainpane run --width 46 --prefix ctrl-g -- codex
 ```
@@ -76,9 +78,9 @@ Ctrl+C·Enter·Tab·Escape는 접두키로 예약할 수 없습니다. 채팅 �
 
 ## 스킬 활성화와 복구
 
-인자 없는 `run -- codex` / `run -- claude`는 **현재 CLI의 첫 프롬프트**로 공통 스킬 지침을 전달합니다. 별도 모델이나 API를 추가하지 않습니다. 이 시작 지침은 대화의 출발점으로 기록하지 않습니다.
+인자 없는 `run -- claude`는 [공식 `--append-system-prompt` 옵션](https://code.claude.com/docs/en/cli-reference#system-prompt-flags)으로 지도 스킬 지침을 추가합니다. 긴 내부 지침을 사용자 메시지로 보내거나 준비 응답을 기다리지 않습니다. 첫 질문을 입력하면 기존 Claude가 답변하면서 지도 기록을 시작합니다. `run -- codex`는 현재 CLI의 첫 프롬프트로 스킬을 활성화합니다. 별도 모델이나 API를 추가하지 않으며 시작 지침은 대화의 출발점으로 기록하지 않습니다.
 
-CLI에 다른 인자를 전달하면 인자 의미를 보존하기 위해 시작 프롬프트를 추가하지 않습니다. 프로젝트 스킬을 한 번 설치하고 해당 CLI 대화에서 활성화하세요.
+CLI에 다른 인자를 전달하면 인자 의미를 보존하기 위해 자동 활성화 지침을 추가하지 않습니다. 프로젝트 스킬을 한 번 설치하고 해당 CLI 대화에서 활성화하세요.
 
 ```text
 brainpane install codex
@@ -93,7 +95,7 @@ $brainpane sync
 $brainpane stop
 ```
 
-Claude는 `brainpane install claude` 후 `/brainpane start`, `/brainpane sync`, `/brainpane stop`을 사용합니다. `--no-bootstrap`은 첫 프롬프트 삽입을 끕니다.
+Claude는 `brainpane install claude` 후 `/brainpane start`, `/brainpane sync`, `/brainpane stop`을 사용합니다. `--no-bootstrap`은 자동 활성화 지침 전달을 끕니다.
 
 지도 ID와 저장 위치는 래퍼가 자식 환경에 명시적으로 전달합니다. 최신 로그를 추측하지 않습니다. 지도 ID와 네이티브 CLI 세션 ID는 다릅니다. `--session`으로 기존 지도를 열 때는 원래 CLI 대화도 직접 지정하세요. 임의 네이티브 실행 파일을 왼쪽에 실행할 수는 있지만 **지도 어댑터는 Codex/Claude만 지원**합니다.
 

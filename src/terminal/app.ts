@@ -90,8 +90,17 @@ export async function terminalApp(options: AppOptions) {
       return;
     }
     const g = geometry();
-    if (e.x >= g.cliWidth && g.mapWidth) { focus = 'map'; options.panel.click(e.y - 1); onResize(); return; }
+    const primaryPress = !e.release && e.button === 0;
+    if (g.mapWidth && e.x >= g.cliWidth + (g.cliWidth ? 1 : 0)) {
+      // Hover, release, drag and wheel must never steal keyboard focus.
+      if (primaryPress) { const changed = focus !== 'map'; focus = 'map'; options.panel.click(e.y - 1); if (changed) onResize(); }
+      else if (!e.release && (e.button === 64 || e.button === 65)) options.panel.input(e.button === 64 ? '\x1b[A' : '\x1b[B');
+      return;
+    }
+    if (e.x >= g.cliWidth) return; // Divider is not a pane.
     if (e.y < 1 || e.y > g.cliRows || !g.cliWidth) return;
+    // Restore typing even when the child (e.g. Claude) captures mouse events.
+    if (primaryPress) focus = 'cli';
     const point = { x: Math.min(g.cliWidth - 1, e.x), y: e.y - 1 };
     if (copyMode || (e.button & 4)) {
       if (e.button === 64 || e.button === 68) term.scroll(3);
@@ -101,7 +110,7 @@ export async function terminalApp(options: AppOptions) {
       return;
     }
     if (term.screen.modes.mouseTrackingMode === 'none') {
-      if (e.button === 64) term.scroll(3); else if (e.button === 65) term.scroll(-3); else focus = 'cli';
+      if (e.button === 64) term.scroll(3); else if (e.button === 65) term.scroll(-3);
     } else term.write(`${esc}<${e.button};${point.x + 1};${point.y + 1}${e.release ? 'm' : 'M'}`);
   }
   const decoder = new InputDecoder(event); const utf8 = new StringDecoder('utf8'); let escapeTimer: NodeJS.Timeout;
@@ -116,11 +125,12 @@ export async function terminalApp(options: AppOptions) {
       if (dirty && !output.writableNeedDrain) {
         dirty = false; const g = geometry(); const left = g.cliWidth ? childRows(term, g.cliWidth, g.cliRows, selection) : [];
         const right = g.mapWidth ? options.panel.render(g.mapWidth, g.cliRows) : [];
-        const title = `${focus === 'cli' ? '●' : '○'} ${options.command}  ${copyMode ? '[COPY: drag, y copies, Esc exits]' : term.scrollOffset ? `[scrollback ${term.scrollOffset}]` : ''}`;
+        const title = `${focus === 'cli' ? '●' : '○'} ${options.command}${focus === 'cli' ? ' · 채팅 입력' : ''}  ${copyMode ? '[COPY: drag, y copies, Esc exits]' : term.scrollOffset ? `[scrollback ${term.scrollOffset}]` : ''}`;
         const top = g.cliWidth ? `${esc}1;38;5;151m${fit(title, g.cliWidth)}${esc}0m` : '';
         const lines = [top + (g.mapWidth ? `${g.cliWidth ? '│' : ''}${esc}1;38;5;151m${fit(`${(focus as string) === 'map' ? '●' : '○'} Brainpane`, g.mapWidth)}${esc}0m` : '')];
         for (let y = 0; y < g.cliRows; y++) lines.push((left[y] || '') + (g.mapWidth ? `${g.cliWidth ? `${esc}0;38;5;240m│${esc}0m` : ''}${right[y] || ' '.repeat(g.mapWidth)}` : ''));
-        const hint = prefixPending ? 'PREFIX: p panel · Tab focus · +/- width · c copy · u/d scroll · e live · q quit · ? help' : help ? 'Map: ↑↓ select, ←→ fold, Enter details, e edit, s state, f follow, n current, r sync, x stop. Esc → chat' : status || `Ctrl+${String.fromCharCode(options.prefix.charCodeAt(0) + 64)} then: p panel / Tab focus / +/- width / ? help`;
+        const prefixLabel = `Ctrl+${String.fromCharCode(options.prefix.charCodeAt(0) + 64)}`;
+        const hint = prefixPending ? 'PREFIX: p panel · Tab focus · +/- width · c copy · u/d scroll · e live · q quit · ? help' : (focus as string) === 'map' ? `지도 탐색 중 · 채팅하려면 왼쪽 클릭 또는 ${prefixLabel} 누른 뒤 Tab` : help ? 'Map: ↑↓ select, ←→ fold, Enter details, e edit, s state, f follow, n current, r sync, x stop. Esc → chat' : status || `${prefixLabel} then: p panel / Tab focus / +/- width / ? help`;
         lines.push(`${esc}0;38;5;245m${fit(hint, g.cols)}${esc}0m`);
         const b = term.screen.buffer.active;
         const cursor = focus === 'cli' && !copyMode && !term.scrollOffset && term.cursorVisible && g.cliWidth ? { x: Math.min(g.cliWidth - 1, b.cursorX), y: Math.min(g.cliRows, b.cursorY + 1) } : null;

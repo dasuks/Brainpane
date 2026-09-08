@@ -45,11 +45,20 @@ try {
   child.write('\x1dp'); await sleep(300); assert.ok(!text().includes('Brainpane'));
   child.write('\x1dp'); await sleep(300); assert.ok(text().includes('Brainpane'));
   await writeFile('.brainpane/test-results/terminal.txt', text());
+  child.write('MOUSE'); await wait(() => text().includes('MOUSE TRACKING ON'), 'child mouse tracking');
+  child.write('\x1b[<0;110;12M\x1b[<0;110;12m');
+  await wait(() => text().includes('지도 탐색 중 · 채팅하려면'), 'visible map focus guidance');
+  child.write('\x1b[<0;4;12M\x1b[<0;4;12m'); await sleep(200);
+  child.write('\x1b[200~채팅 복귀 확인\x1b[201~');
+  await wait(() => text().includes('Received:') && text().includes('채팅 복귀 확인'), 'click restores chat with child mouse tracking');
+  assert.ok(!text().includes('지도 탐색 중 · 채팅하려면'));
+  child.write('\x1b[<65;110;12M'); await sleep(200);
+  assert.ok(!text().includes('지도 탐색 중 · 채팅하려면'), 'map wheel does not steal typing focus');
   child.write('\x03'); await wait(() => !!exit, 'Ctrl+C forwarded / CLI exit');
   assert.equal(exit.exitCode, 0); assert.ok(tail.includes('\x1b[?1049l'));
   assert.ok(tail.includes('\x1b[?2004l'));
   await assert.rejects(readFile(`.brainpane/runs/${id}/runtime.json`));
-  console.log(JSON.stringify({ passed: true, id, checks: ['PTY streaming', 'VT clipping', 'Korean paste', 'demo publish to panel', 'selection separation', 'details', 'narrow toggle', 'resize', 'hide', 'Ctrl+C forwarding', 'terminal restore', 'managed service cleanup'] }));
+  console.log(JSON.stringify({ passed: true, id, checks: ['PTY streaming', 'VT clipping', 'Korean paste', 'demo publish to panel', 'selection separation', 'details', 'narrow toggle', 'resize', 'hide', 'mouse focus recovery', 'wheel preserves focus', 'Ctrl+C forwarding', 'terminal restore', 'managed service cleanup'] }));
   screen.dispose(); process.exit(0);
 } catch (e) {
   child.write('\x1dq'); await sleep(1000); try { child.kill(); } catch {} screen.dispose(); console.error(e); process.exit(1);

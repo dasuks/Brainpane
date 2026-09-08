@@ -9,7 +9,8 @@ process.stdin.on('data', bytes => {
   const text = bytes.toString();
   received = (received + text).slice(-1000);
   if (text === '\x03') { clearInterval(timer); process.stdout.write('\x1b[?2004l'); process.exit(0); }
-  if (received.includes('CLEAR')) { received = ''; process.stdout.write('\x1b[2J\x1b[HV T cleared only in the left pane\r\n'); }
+  if (received.includes('MOUSE')) { received = ''; process.stdout.write('\x1b[?1000h\x1b[?1006h\x1b[10;1HMOUSE TRACKING ON'); }
+  else if (received.includes('CLEAR')) { received = ''; process.stdout.write('\x1b[2J\x1b[HV T cleared only in the left pane\r\n'); }
   else if (received.includes('HISTORY')) { received = ''; process.stdout.write(Array.from({ length: 80 }, (_, i) => `\r\nHistory line ${i}`).join('')); }
   else process.stdout.write('\x1b[8;1HReceived: ' + JSON.stringify(text) + '    ');
 });

@@ -43,7 +43,14 @@ export async function run(options: { command: string; args: string[]; session?: 
     if (!resolved.adapter) panel.notice = '화면 실행만 지원 · 이 CLI의 지도 어댑터는 없습니다.';
     else if (options.bootstrap !== false && args.length === 0 && !options.demo) {
       const prompt = `Brainpane terminal mapping is explicitly enabled for this CLI conversation. Read the Brainpane skill at ${JSON.stringify(env.BRAINPANE_SKILL)} and its protocol. Use node ${JSON.stringify(env.BRAINPANE_COMMAND)} for local commands; BRAINPANE_SESSION and BRAINPANE_DATA_DIR already bind this process to map ${mapId}. The server is managed by the wrapper; do not start any server/browser or other model. Read context once, then maintain small updates after meaningful public conversation changes. This startup instruction is control metadata, NOT the user's original question: preserve waitingForGoal until their first substantive message. When it arrives, initialize the goal with its captured user evidence and update the root title. Respond to this startup only with a short readiness sentence. Do not analyze repository files, hidden reasoning, terminal output or tool logs for the map. Stop/sync follow the skill.`;
-      args = [prompt];
+      if (resolved.adapter === 'claude') {
+        // Official invocation-only extension of Claude's default instructions.
+        // No synthetic user turn or readiness response before the user types.
+        const instructions = prompt.replace('Respond to this startup only with a short readiness sentence.',
+          'Apply this mapping instruction when the user sends their first message. Answer that message normally in their language; do not produce a separate startup or readiness response.');
+        args = ['--append-system-prompt', instructions];
+        panel.notice = '왼쪽에 첫 질문을 입력하면 지도 기록을 시작합니다.';
+      } else args = [prompt];
     } else if (resolved.adapter && !options.demo) panel.notice = `왼쪽에서 ${resolved.adapter === 'claude' ? '/brainpane' : '$brainpane'} start로 지도를 활성화하세요.`;
     if (options.demo) {
       const fixture = JSON.parse(await readFile(join(root, 'fixtures/demo.json'), 'utf8'));
