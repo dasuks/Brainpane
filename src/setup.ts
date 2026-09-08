@@ -36,7 +36,9 @@ export function integrationBlock(shell: Shell, entry: string, node: string) {
       lines.push(`$brainpaneExisting = Get-Command ${name} -CommandType Alias,Function -ErrorAction SilentlyContinue`,
         `if (-not $brainpaneExisting -or $brainpaneExisting.Definition.Contains('Brainpane managed function v1')) {`,
         `  function global:${name} { # Brainpane managed function v1`,
-        `    & ${psPath(node)} ${psPath(entry)}${command} @args`,
+        `    if ($MyInvocation.ExpectingInput) {`,
+        `      $input | & ${psPath(node)} ${psPath(entry)}${command} @args`,
+        `    } else { & ${psPath(node)} ${psPath(entry)}${command} @args }`,
         `    $global:LASTEXITCODE = $LASTEXITCODE`, '  }',
         `} else { Write-Warning 'Brainpane: existing ${name} alias/function preserved. Use brainpane run --dormant -- ${name} or inspect your profile.' }`);
     } else {

@@ -10,7 +10,8 @@ Validated on 2026-09-09. Claims below concern the terminal implementation, not t
 - The first Codex automation attempt timed out after sending the second prompt. Increasing the test's paste/turn-settle intervals allowed the rerun to complete. We do not treat that as proof of universal input timing compatibility.
 - 22 unit/integration tests passed locally, covering installer ownership, repeat installation, UTF-16 profile preservation, Unicode paths, existing functions, passthrough/recursion, interrupted-setup recovery, and session-bound panel lifecycle in addition to the prior map/VT tests.
 - Terminal E2E and dormant → open → publish → hide → sync → stop → reopen E2E passed. A no-change synchronization can clear loading without a semantic patch. Default session directories contain a Git exclusion file.
-- GitHub Actions defines Windows/Linux/macOS build, unit and deterministic PTY checks. Until the corresponding run passes, the definition alone is not a compatibility result. Live logged-in model tests remain opt-in and are not run in CI.
+- [GitHub Actions run 34273064060](https://github.com/dasuks/Brainpane/actions/runs/34273064060) passed Windows/Linux/macOS clean install, build, unit and deterministic PTY/lifecycle checks on Node 24. The first macOS run exposed node-pty 1.1.0's missing spawn-helper executable bit; the install/build repair was validated by the successful rerun. Live logged-in model tests remain opt-in and are not run in CI.
+- A separate Windows checkout containing only tracked 0.2 source also passed npm ci, build, isolated setup and uninstall. PowerShell pipeline input is covered by the generated-profile regression test.
 
 The earlier checks below document the immediate-open 0.1 path, which is still available through `brainpane run`.
 
@@ -41,7 +42,7 @@ The actual CLI tests run the regular interactive processes inside the wrapper PT
 ## Scope and remaining limits
 
 - Four live turns are a smoke test, not a general guarantee of semantic accuracy or per-turn invocation. The eight-turn replay remains deterministic; full manual evaluation is documented separately.
-- Cross-platform implementation is present; Linux/macOS/WSL, cmux, and every external terminal host combination have not been verified. No host-specific API is required by the product.
+- Linux/macOS have hosted-runner deterministic PTY coverage. Their logged-in Codex/Claude sessions, WSL, cmux and every external terminal host combination have not been verified. No host-specific API is required by the product.
 - Complete Korean strings and multiline paste were checked. Every host's native IME composition/candidate UI and complex emoji/grapheme widths were not verified.
 - The compositor handles standard VT cell attributes, normal/alternate buffers, cursor queries and resize. Images, all extended keyboard protocols, external OSC clipboard operations and every legacy mouse encoding are not claimed supported.
 - Native UI trust/auth/tool approvals stay inside the original CLI. The wrapper does not bypass them.

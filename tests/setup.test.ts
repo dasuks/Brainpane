@@ -62,6 +62,9 @@ test('PowerShell shell functions preserve Unicode paths, arguments, exit status 
     const preserved = await exec('powershell.exe', ['-NoProfile', '-Command', `function global:codex { 'existing function' }; . ${ps(profile)}; codex`]);
     assert.ok(preserved.stdout.includes('existing function'));
     assert.ok(!preserved.stdout.includes('["launch"'));
+    await writeFile(entry, 'let input = ""; for await (const chunk of process.stdin) input += chunk; console.log(JSON.stringify({input, args:process.argv.slice(2)}));');
+    const piped = await exec('powershell.exe', ['-NoProfile', '-Command', `. ${ps(profile)}; 'pipeline input' | codex exec -`]);
+    assert.equal(JSON.parse(piped.stdout).input.trim(), 'pipeline input');
   } finally { await rm(home, { recursive: true, force: true }); }
 });
 
