@@ -50,7 +50,12 @@ export async function run(options: { command: string; args: string[]; session?: 
           'Apply this mapping instruction when the user sends their first message. Answer that message normally in their language; do not produce a separate startup or readiness response.');
         args = ['--append-system-prompt', instructions];
         panel.notice = '왼쪽에 첫 질문을 입력하면 지도 기록을 시작합니다.';
-      } else args = [prompt];
+      } else {
+        // Codex's developer_instructions override would replace an existing
+        // user setting. Keep activation explicit without dumping internal rules
+        // or paths into chat; the bundled skill resolves the inherited binding.
+        args = ['Brainpane 시작: BRAINPANE_SKILL 환경 변수의 스킬을 읽고 현재 지도에 연결해 줘. 첫 질문은 기다리고, 준비되면 “Brainpane 준비 완료”만 답해 줘.'];
+      }
     } else if (resolved.adapter && !options.demo) panel.notice = `왼쪽에서 ${resolved.adapter === 'claude' ? '/brainpane' : '$brainpane'} start로 지도를 활성화하세요.`;
     if (options.demo) {
       const fixture = JSON.parse(await readFile(join(root, 'fixtures/demo.json'), 'utf8'));

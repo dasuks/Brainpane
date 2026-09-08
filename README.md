@@ -78,7 +78,7 @@ Ctrl+C·Enter·Tab·Escape는 접두키로 예약할 수 없습니다. 채팅 �
 
 ## 스킬 활성화와 복구
 
-인자 없는 `run -- claude`는 [공식 `--append-system-prompt` 옵션](https://code.claude.com/docs/en/cli-reference#system-prompt-flags)으로 지도 스킬 지침을 추가합니다. 긴 내부 지침을 사용자 메시지로 보내거나 준비 응답을 기다리지 않습니다. 첫 질문을 입력하면 기존 Claude가 답변하면서 지도 기록을 시작합니다. `run -- codex`는 현재 CLI의 첫 프롬프트로 스킬을 활성화합니다. 별도 모델이나 API를 추가하지 않으며 시작 지침은 대화의 출발점으로 기록하지 않습니다.
+인자 없는 `run -- claude`는 [공식 `--append-system-prompt` 옵션](https://code.claude.com/docs/en/cli-reference#system-prompt-flags)으로 지도 스킬 지침을 추가합니다. 긴 내부 지침을 사용자 메시지로 보내거나 준비 응답을 기다리지 않습니다. 첫 질문을 입력하면 기존 Claude가 답변하면서 지도 기록을 시작합니다. `run -- codex`는 짧은 한국어 시작 메시지로 스킬을 활성화하고 준비 응답을 기다립니다. Codex에는 이 안내와 스킬을 읽는 도구 호출이 보일 수 있지만 긴 내부 지침이나 절대 경로를 시작 메시지로 넣지 않습니다. 기존 Codex의 `developer_instructions` 설정은 덮어쓰지 않습니다. 별도 모델이나 API를 추가하지 않으며 시작 지침은 대화의 출발점으로 기록하지 않습니다.
 
 CLI에 다른 인자를 전달하면 인자 의미를 보존하기 위해 자동 활성화 지침을 추가하지 않습니다. 프로젝트 스킬을 한 번 설치하고 해당 CLI 대화에서 활성화하세요.
 

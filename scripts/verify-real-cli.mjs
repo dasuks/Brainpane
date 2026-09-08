@@ -10,7 +10,10 @@ const id = `real-${cli}-${Date.now()}`;
 await mkdir('.brainpane/test-results', { recursive: true });
 const screen = new xterm.Terminal({ cols: 140, rows: 42, allowProposedApi: true, scrollback: 2000, logLevel: 'off' });
 screen.loadAddon(new unicode11.Unicode11Addon()); screen.unicode.activeVersion = '11';
-const child = pty.spawn(process.execPath, ['bin/brainpane.mjs', 'run', '--session', id, '--', cli], { cols: 140, rows: 42, cwd: process.cwd(), env: { ...process.env, TERM: 'xterm-256color' } });
+const installedLauncher = process.platform === 'win32' && process.argv.includes('--installed-launcher');
+const child = pty.spawn(installedLauncher ? 'powershell.exe' : process.execPath,
+  installedLauncher ? ['-NoProfile', '-Command', `brainpane run --session ${id} -- ${cli}`] : ['bin/brainpane.mjs', 'run', '--session', id, '--', cli],
+  { cols: 140, rows: 42, cwd: process.cwd(), env: { ...process.env, TERM: 'xterm-256color' } });
 let exited, state;
 let trusted = false;
 screen.onData(data => child.write(data)); child.onData(data => screen.write(data)); child.onExit(e => { exited = e; });
@@ -30,12 +33,17 @@ try {
       trusted = true; child.write('\x1b[B'); await sleep(200); child.write('\r');
     }
     if (cli === 'claude') return text().includes('Claude Code') && /[❯>]/.test(text()) && !text().includes('Yes, I trust this folder');
-    return /(?:[•●].*(?:Brainpane.*ready|지도.*준비)|Brainpane is ready)/i.test(text());
+    return /(?:[•●].*(?:Brainpane.*ready|Brainpane 준비 완료|지도.*준비)|Brainpane is ready)/i.test(text());
   }, 'skill bootstrap');
-  if (cli === 'claude') {
-    if (text().includes('Brainpane terminal mapping is explicitly enabled')) throw new Error('Internal instruction leaked into chat');
-    if ((await load()).version !== 0) throw new Error('Map updated before the first user question');
-  }
+  if (text().includes('Brainpane terminal mapping is explicitly enabled')) throw new Error('Internal instruction leaked into chat');
+  if ((await load()).version !== 0) throw new Error('Map updated before the first user question');
+  // Exercise real CLI focus recovery, not only the VT protocol fixture.
+  child.write('\x1b[<0;120;8M\x1b[<0;120;8m');
+  await wait(() => text().includes('지도 탐색 중 · 채팅하려면'), 'map focus');
+  child.write('\x1b[<0;4;8M\x1b[<0;4;8m');
+  await wait(() => text().includes('채팅 입력') && !text().includes('지도 탐색 중 · 채팅하려면'), 'click back to chat');
+  child.write('\x1b[<65;120;8M'); await sleep(300);
+  if (text().includes('지도 탐색 중 · 채팅하려면')) throw new Error('Map wheel stole chat focus');
   const turns = [
     'LLM이랑 얘기하다 보면 대화가 어디로 이어지는지 놓쳐. 같은 터미널 안에서 지도로 보여줄 수 있을까? 코드는 수정하지 말고 아이디어만 두 문장으로 답해 줘.',
     '근데 작은 터미널에서 글자만으로 지도가 잘 보일지 가시성을 이야기해 보자. 아직 표시 방식을 확정한 건 아니야.',
@@ -52,7 +60,7 @@ try {
   if (results[1].focusTopicId !== results[3].focusTopicId) throw new Error('Return did not reuse the visibility topic');
   if (!state.topics.some(t => t.status === 'parked')) throw new Error('Deferred topic was not preserved as parked');
   await snapshot();
-  const report = { cli, id, results, passed: true, scope: '4 real interactive turns; not a general semantic-quality guarantee' };
+  const report = { cli, id, installedLauncher, inputChecks: ['click map', 'click back to chat', 'wheel preserves focus', 'Korean paste and submit'], results, passed: true, scope: '4 real interactive turns; not a general semantic-quality guarantee' };
   await writeFile(`.brainpane/test-results/${cli}-verification.json`, JSON.stringify(report, null, 2));
   child.write('\x1dq'); await wait(() => !!exited, 'wrapper quit and child cleanup', 15000);
   console.log(JSON.stringify(report)); screen.dispose(); process.exit(0);
