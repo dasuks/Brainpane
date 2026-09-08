@@ -1,0 +1,313 @@
+{
+  "session": {
+    "goal": "LLM 대화에서 현재 위치와 돌아갈 가지를 놓치지 않기",
+    "rootTitle": "대화에서 길을 잃지 않기",
+    "binding": {
+      "cli": "demo",
+      "conversation": "8턴 공개 예제 · 예정된 패치 재생"
+    }
+  },
+  "turns": [
+    {
+      "step": 1,
+      "role": "user",
+      "text": "LLM이랑 얘기하다 보면 어디로 대화가 이어지는지 놓칠 때가 있어.",
+      "patch": {
+        "updateId": "demo-turn-1",
+        "baseVersion": 0,
+        "operations": [
+          {
+            "type": "edit",
+            "topicId": "root",
+            "changes": {
+              "summary": "LLM 대화가 갈라질 때 처음의 질문과 현재 위치를 놓치는 문제.",
+              "remaining": "기존 대화를 방해하지 않고 맥락을 유지하는 방법은?",
+              "sources": [
+                {
+                  "id": "fixture-1",
+                  "role": "user",
+                  "text": "LLM이랑 얘기하다 보면 어디로 대화가 이어지는지 놓칠 때가 있어."
+                }
+              ]
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "root",
+            "certainty": "confirmed",
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "step": 2,
+      "role": "user",
+      "text": "이걸 CLI 옆에 지도로 보여줄 수 있을까?",
+      "patch": {
+        "updateId": "demo-turn-2",
+        "baseVersion": 1,
+        "operations": [
+          {
+            "type": "add",
+            "topic": {
+              "id": "approach",
+              "parentId": "root",
+              "title": "CLI 옆의 대화 지도",
+              "summary": "기존 CLI를 그대로 쓰면서 옆에서 대화의 흐름을 볼 수 있을지 탐색합니다.",
+              "progress": "검토 중이며 아직 결정하지 않았습니다.",
+              "remaining": "지도를 어떻게 연결하고 표시할까?",
+              "status": "open",
+              "sources": [
+                {
+                  "id": "fixture-2",
+                  "role": "user",
+                  "text": "이걸 CLI 옆에 지도로 보여줄 수 있을까?"
+                }
+              ],
+              "statements": []
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "approach",
+            "certainty": "confirmed",
+            "reason": "대화의 흐름을 놓치지 않는 해결 방법을 찾기 위해."
+          }
+        ]
+      }
+    },
+    {
+      "step": 3,
+      "role": "user",
+      "text": "cmux나 일반 터미널에서도 쓸 수 있어야 하는데.",
+      "patch": {
+        "updateId": "demo-turn-3",
+        "baseVersion": 2,
+        "operations": [
+          {
+            "type": "add",
+            "topic": {
+              "id": "compatibility",
+              "parentId": "approach",
+              "title": "터미널 호환성",
+              "summary": "cmux와 일반 터미널에서 사용할 수 있어야 합니다.",
+              "progress": "검토 중이며 아직 결정하지 않았습니다.",
+              "remaining": "특정 호스트에 의존하지 않는 연결 방식은?",
+              "status": "open",
+              "sources": [
+                {
+                  "id": "fixture-3",
+                  "role": "user",
+                  "text": "cmux나 일반 터미널에서도 쓸 수 있어야 하는데."
+                }
+              ],
+              "statements": []
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "compatibility",
+            "certainty": "confirmed",
+            "reason": "CLI 옆 지도가 여러 터미널에서도 작동해야 하기 때문에."
+          }
+        ]
+      }
+    },
+    {
+      "step": 4,
+      "role": "user",
+      "text": "근데 터미널 글자만으로는 잘 안 보이지 않을까?",
+      "patch": {
+        "updateId": "demo-turn-4",
+        "baseVersion": 3,
+        "operations": [
+          {
+            "type": "add",
+            "topic": {
+              "id": "visibility",
+              "parentId": "approach",
+              "title": "표시 방식과 가시성",
+              "summary": "터미널 글자만으로 복잡한 대화의 가지가 잘 보일지 검토합니다.",
+              "progress": "검토 중이며 아직 결정하지 않았습니다.",
+              "remaining": "텍스트와 웹 UI의 가독성을 어떻게 비교할까?",
+              "status": "open",
+              "sources": [
+                {
+                  "id": "fixture-4",
+                  "role": "user",
+                  "text": "근데 터미널 글자만으로는 잘 안 보이지 않을까?"
+                }
+              ],
+              "statements": []
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "visibility",
+            "certainty": "confirmed",
+            "reason": "터미널의 텍스트 표시만으로 충분히 읽기 쉬운지 확인하기 위해."
+          }
+        ]
+      }
+    },
+    {
+      "step": 5,
+      "role": "assistant",
+      "text": "웹 패널로 보여주는 방법을 고려할 수 있습니다.",
+      "patch": {
+        "updateId": "demo-turn-5",
+        "baseVersion": 4,
+        "operations": [
+          {
+            "type": "edit",
+            "topicId": "visibility",
+            "changes": {
+              "progress": "웹 패널 방식이 제안되었습니다. 사용자는 선택하지 않았습니다.",
+              "statements": [
+                {
+                  "kind": "proposal",
+                  "text": "별도의 웹 패널로 대화 지도를 표시하기"
+                }
+              ],
+              "sources": [
+                {
+                  "id": "fixture-4",
+                  "role": "user",
+                  "text": "근데 터미널 글자만으로는 잘 안 보이지 않을까?"
+                },
+                {
+                  "id": "fixture-5",
+                  "role": "assistant",
+                  "text": "웹 패널로 보여주는 방법을 고려할 수 있습니다."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "step": 6,
+      "role": "user",
+      "text": "아까 정리하는 데 쓰는 토큰은 누가 부담한다고 했지?",
+      "patch": {
+        "updateId": "demo-turn-6",
+        "baseVersion": 5,
+        "operations": [
+          {
+            "type": "add",
+            "topic": {
+              "id": "cost",
+              "parentId": "root",
+              "title": "지도 갱신의 토큰 부담",
+              "summary": "지도 정리에 쓰는 토큰의 부담 주체를 질문했습니다.",
+              "progress": "검토 중이며 아직 결정하지 않았습니다.",
+              "remaining": "기존 CLI의 사용량과 추가 추론 비용은 어떻게 달라질까?",
+              "status": "open",
+              "sources": [
+                {
+                  "id": "fixture-6",
+                  "role": "user",
+                  "text": "아까 정리하는 데 쓰는 토큰은 누가 부담한다고 했지?"
+                }
+              ],
+              "statements": []
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "cost",
+            "certainty": "confirmed",
+            "reason": "지도 정리에 드는 토큰의 부담을 확인하기 위해."
+          }
+        ]
+      }
+    },
+    {
+      "step": 7,
+      "role": "user",
+      "text": "그건 일단 놔두고, 아까 가시성 얘기로 돌아가자.",
+      "patch": {
+        "updateId": "demo-turn-7",
+        "baseVersion": 6,
+        "operations": [
+          {
+            "type": "edit",
+            "topicId": "cost",
+            "changes": {
+              "status": "parked",
+              "progress": "사용자가 비용 논의를 일단 미루었습니다.",
+              "sources": [
+                {
+                  "id": "fixture-6",
+                  "role": "user",
+                  "text": "아까 정리하는 데 쓰는 토큰은 누가 부담한다고 했지?"
+                },
+                {
+                  "id": "fixture-7",
+                  "role": "user",
+                  "text": "그건 일단 놔두고, 아까 가시성 얘기로 돌아가자."
+                }
+              ]
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "visibility",
+            "certainty": "confirmed",
+            "reason": "비용 이야기를 보류하고 이전 가시성 논의로 돌아왔습니다."
+          }
+        ]
+      }
+    },
+    {
+      "step": 8,
+      "role": "user",
+      "text": "웹 UI로 확정한 건 아니야. 아직 비교 중이야.",
+      "patch": {
+        "updateId": "demo-turn-8",
+        "baseVersion": 7,
+        "operations": [
+          {
+            "type": "edit",
+            "topicId": "visibility",
+            "changes": {
+              "status": "open",
+              "progress": "웹 UI는 확정되지 않았으며 표시 방식을 비교 중입니다.",
+              "statements": [
+                {
+                  "kind": "proposal",
+                  "text": "웹 패널은 비교할 후보 중 하나"
+                }
+              ],
+              "sources": [
+                {
+                  "id": "fixture-4",
+                  "role": "user",
+                  "text": "근데 터미널 글자만으로는 잘 안 보이지 않을까?"
+                },
+                {
+                  "id": "fixture-5",
+                  "role": "assistant",
+                  "text": "웹 패널로 보여주는 방법을 고려할 수 있습니다."
+                },
+                {
+                  "id": "fixture-8",
+                  "role": "user",
+                  "text": "웹 UI로 확정한 건 아니야. 아직 비교 중이야."
+                }
+              ]
+            }
+          },
+          {
+            "type": "focus",
+            "topicId": "visibility",
+            "certainty": "confirmed",
+            "reason": "사용자가 웹 UI 확정이 아니라 아직 비교 중이라고 바로잡았습니다."
+          }
+        ]
+      }
+    }
+  ]
+}
