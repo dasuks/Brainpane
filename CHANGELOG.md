@@ -7,6 +7,7 @@
 - No startup model turn or map capture in the dormant path. User-only skill invocation policies, noninteractive passthrough and nested-wrapper prevention.
 - Ownership-based upgrades/uninstall, profile encoding preservation, interrupted-install recovery and diagnosis.
 - GitHub-link installation guide, deterministic lifecycle tests, real late-start tests for both CLIs, and a Windows/Linux/macOS CI matrix.
+- Host terminal modes (mouse reporting, bracketed paste) are re-asserted on resize and focus-in, so hosts that re-attach or replay the screen keep reporting wheel events to the wrapped CLI instead of converting them to arrow keys. Focus reports reach the child only when it requested them.
 
 Preview limits: no universal terminal/IME guarantee, no forced every-turn hook, no recovery of unavailable compacted conversation, and no injection into an already-running unwrapped CLI. npm-registry/native application releases are not provided.
 

@@ -33,13 +33,18 @@ export async function terminalApp(options: AppOptions) {
     options.env, () => { dirty = true; }, code => { exitCode = code; stopped = true; });
   options.onSpawn?.();
   const oldRaw = input.isRaw;
+  // Host modes are re-asserted on resize and focus-in: a host that re-attaches or
+  // replays its screen (Orca tabs, reconnects) may drop them, after which the host
+  // turns wheel into arrow keys instead of reporting mouse events. Plain CLIs such as
+  // Claude re-emit their own modes on every re-render; the compositor must do the same.
+  const hostModes = `${esc}?25l${esc}?7l${esc}?2004h${esc}?1000h${esc}?1002h${esc}?1006h${esc}?1004h`;
   const restore = () => {
     if (input.isTTY) input.setRawMode(!!oldRaw);
-    output.write(`${esc}0m${esc}?1000l${esc}?1002l${esc}?1006l${esc}?2004l${esc}?7h${esc}?25h${esc}?1049l`);
+    output.write(`${esc}0m${esc}?1004l${esc}?1000l${esc}?1002l${esc}?1006l${esc}?2004l${esc}?7h${esc}?25h${esc}?1049l`);
   };
   const onSignal = () => { stopped = true; };
   const onResize = () => {
-    const g = geometry(); term.resize(g.cliWidth || g.cols, g.cliRows); selection = null; painter.invalidate(); output.write(`${esc}2J`); dirty = true;
+    const g = geometry(); term.resize(g.cliWidth || g.cols, g.cliRows); selection = null; painter.invalidate(); output.write(`${hostModes}${esc}2J`); dirty = true;
   };
   function prefixAction(data: string) {
     prefixPending = false;
@@ -73,6 +78,13 @@ export async function terminalApp(options: AppOptions) {
     dirty = true;
     if (e.type === 'paste') { if (focus === 'cli') term.paste(e.data); else options.panel.input(e.data); return; }
     if (e.type === 'key') {
+      if (e.data === `${esc}I` || e.data === `${esc}O`) {
+        // Host focus report: re-assert host modes on focus-in, and pass the event on
+        // only when the child asked for focus reporting itself.
+        if (e.data === `${esc}I`) { output.write(hostModes); painter.invalidate(); }
+        if (term.screen.modes.sendFocusMode) term.write(e.data, true);
+        return;
+      }
       if (prefixPending) { prefixAction(e.data); return; }
       if (e.data === options.prefix) { prefixPending = true; return; }
       if (copyMode) {
@@ -121,7 +133,7 @@ export async function terminalApp(options: AppOptions) {
   const onError = () => { exitCode = 1; stopped = true; };
   try {
     input.setRawMode(true); input.resume();
-    output.write(`${esc}?1049h${esc}?25l${esc}?7l${esc}?2004h${esc}?1000h${esc}?1002h${esc}?1006h${esc}2J`);
+    output.write(`${esc}?1049h${hostModes}${esc}2J`);
     input.on('data', onInput); input.on('error', onError); output.on('error', onError); output.on('resize', onResize);
     process.on('SIGTERM', onSignal); process.on('SIGHUP', onSignal); process.on('SIGINT', onSignal);
     while (!stopped) {

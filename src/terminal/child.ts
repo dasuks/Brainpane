@@ -65,7 +65,7 @@ export class EmbeddedTerminal {
     });
     this.child.onExit(e => { this.exited = true; onExit(e.exitCode); });
   }
-  write(data: string) { if (!this.exited) { this.scrollOffset = 0; this.child.write(data); } }
+  write(data: string, keepScroll = false) { if (!this.exited) { if (!keepScroll) this.scrollOffset = 0; this.child.write(data); } }
   paste(text: string) {
     // Real paste remains one bracketed paste; Enter inside it never becomes a separate submit.
     this.write(this.screen.modes.bracketedPasteMode ? `\x1b[200~${text.replace(/\x1b/g, '')}\x1b[201~` : text);
