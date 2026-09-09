@@ -8,6 +8,7 @@
 - Ownership-based upgrades/uninstall, profile encoding preservation, interrupted-install recovery and diagnosis.
 - GitHub-link installation guide, deterministic lifecycle tests, real late-start tests for both CLIs, and a Windows/Linux/macOS CI matrix.
 - Host terminal modes (mouse reporting, bracketed paste) are re-asserted on resize and focus-in, so hosts that re-attach or replay the screen keep reporting wheel events to the wrapped CLI instead of converting them to arrow keys. Focus reports reach the child only when it requested them.
+- Architecture is enforced in CI: `docs/ARCHITECTURE.md` fixes the layer dependency direction, `npm run lint:arch` checks it without third-party parsers, and `npm run lint` runs oxlint correctness rules with type-aware promise checks (TypeScript 7 ships no JS API, so typescript-eslint is not an option).
 
 Preview limits: no universal terminal/IME guarantee, no forced every-turn hook, no recovery of unavailable compacted conversation, and no injection into an already-running unwrapped CLI. npm-registry/native application releases are not provided.
 

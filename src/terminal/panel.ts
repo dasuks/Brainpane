@@ -1,4 +1,4 @@
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { atomicWrite } from '../core/store.js';
 import type { Session, Topic } from '../core/model.js';

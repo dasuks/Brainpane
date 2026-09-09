@@ -12,6 +12,8 @@
   },
   "scripts": {
     "build": "node scripts/fix-pty-permissions.mjs && tsc --noEmit && tsc -p tsconfig.server.json",
+    "lint": "oxlint --type-aware src tests scripts",
+    "lint:arch": "node scripts/check-architecture.mjs",
     "postinstall": "node scripts/fix-pty-permissions.mjs",
     "build:web-legacy": "vite build",
     "start": "node bin/brainpane.mjs run -- codex",
@@ -38,6 +40,8 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "@xyflow/react": "^12.11.6",
+    "oxlint": "^1.82.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tsx": "^4.23.13",

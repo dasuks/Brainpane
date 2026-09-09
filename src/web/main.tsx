@@ -4,7 +4,7 @@ import { ReactFlow, Background, Controls, Handle, Position, type NodeProps, type
 import '@xyflow/react/dist/style.css';
 import './style.css';
 import type { Session, Topic } from '../core/model';
-import { browse, emptyView, pathTo, placeNew, readView, visible, type ViewState } from './view';
+import { browse, pathTo, placeNew, readView, visible, type ViewState } from './view';
 
 const statuses = { open: '○ 검토 중', resolved: '✓ 해결됨', parked: 'Ⅱ 보류됨' };
 async function api(path: string, body?: unknown, token?: string) {

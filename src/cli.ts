@@ -64,7 +64,7 @@ if (command === 'setup' || command === 'uninstall' || command === 'doctor' || co
     binding: { cli: values.cli, conversation: values.conversation } });
   console.log(JSON.stringify({ id: s.id, version: s.version, binding: s.binding }));
 } else if (command === 'context') {
-  const s = await request(`sessions/${session()}`); const { receipts, ...context } = s;
+  const s = await request(`sessions/${session()}`); const { receipts: _receipts, ...context } = s;
   // Quotes are available in the UI; omit full quotes from routine context reads.
   context.topics = context.topics.map((t: any) => ({ ...t, sources: t.sources.map((r: any) => ({ id: r.id, role: r.role })) }));
   console.log(JSON.stringify(context, null, 2));

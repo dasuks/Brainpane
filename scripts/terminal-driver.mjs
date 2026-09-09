@@ -5,7 +5,6 @@ import unicode11 from '@xterm/addon-unicode11';
 const { Terminal } = xterm;
 const { Unicode11Addon } = unicode11;
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 await mkdir('.brainpane', { recursive: true });
 const screen = new Terminal({ cols: 130, rows: 38, allowProposedApi: true, scrollback: 3000, logLevel: 'off' });
 screen.loadAddon(new Unicode11Addon()); screen.unicode.activeVersion = '11';
