@@ -80,7 +80,7 @@ export async function run(options: { command: string; args: string[]; session?: 
       // Replay published patches through the exact authenticated API; no semantic claims about the child CLI.
       let step = 0; let pending = false;
       panel.notice = '예정된 8턴 패치 재생 · LLM 판단 평가 아님';
-      timer = setInterval(async () => {
+      const replayTurn = async () => {
         if (pending || step >= fixture.turns.length) return; pending = true;
         try {
           const patch = structuredClone(fixture.turns[step].patch);
@@ -90,7 +90,10 @@ export async function run(options: { command: string; args: string[]; session?: 
           panel!.notice = `예정된 패치 ${step}/8 · 실제 CLI 해석과 별개`;
         } catch (e) { panel!.error = (e as Error).message; clearInterval(timer); }
         finally { pending = false; }
-      }, 1100);
+      };
+      // Synchronous tick: the async step handles its own errors; a failure outside that
+      // path stops the replay instead of surfacing as an unhandled rejection.
+      timer = setInterval(() => { replayTurn().catch(() => clearInterval(timer)); }, 1100);
     }
     return await terminalApp({ command: options.command, args, env, width, prefix, panel, control, hidden: options.dormant, onSpawn: options.onSpawn });
   } finally { clearInterval(timer); await server.close(); }

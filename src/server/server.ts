@@ -42,7 +42,7 @@ export async function startServer(options: { dataDir: string; webDir: string; po
       else res.write(`data: ${JSON.stringify(value)}\n\n`);
     }
   }
-  const server = createServer(async (req, res) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -112,7 +112,10 @@ export async function startServer(options: { dataDir: string; webDir: string; po
       if (sessionId && req.method === 'POST') broadcast({ type: 'error', sessionId, message, at: new Date().toISOString() });
       if (!res.headersSent) json(res, code, { error: message }); else res.end();
     }
-  });
+  };
+  // Synchronous listener: the async handler's own catch answers every request; if even
+  // that fails (socket already gone), drop the connection instead of leaking a rejection.
+  const server = createServer((req, res) => { handle(req, res).catch(() => res.destroy()); });
   server.requestTimeout = 10000;
   try {
     await new Promise<void>((ok, fail) => { server.once('error', fail); server.listen(options.port, '127.0.0.1', () => ok()); });
